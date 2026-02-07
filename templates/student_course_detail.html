@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ course.title }} | Student</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        .bg-brand-orange { background-color: #f97316; }
+        .text-brand-orange { color: #f97316; }
+        .bg-brand-blue { background-color: #1e3a8a; }
+        .text-brand-blue { color: #1e3a8a; }
+        
+        .sidebar {
+            width: 200px;
+        }
+        
+        .main-content {
+            margin-left: 200px;
+        }
+        
+        .nav-link {
+            padding: 12px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #64748b;
+        }
+        
+        .nav-link:hover {
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+        
+        .nav-link.active {
+            background-color: #fef3c7;
+            color: #f97316;
+        }
+        
+        .quiz-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+        
+        .quiz-card:hover {
+            border-color: #0d9488;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex">
+
+    <!-- Simple Sidebar -->
+    <aside class="sidebar bg-white border-r border-slate-200 min-h-screen fixed left-0 top-0 z-40">
+        <!-- Logo -->
+        <div class="p-4 border-b border-slate-200">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-brand-orange rounded flex items-center justify-center text-white">
+                    <i class="ph ph-graduation-cap"></i>
+                </div>
+                <span class="font-bold text-brand-blue">SkillTrack</span>
+            </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="p-3 space-y-1">
+            <a href="/student/dashboard" class="nav-link">
+                <i class="ph ph-house text-lg"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/student/grades" class="nav-link">
+                <i class="ph ph-chart-line text-lg"></i>
+                <span>Grades</span>
+            </a>
+            <a href="/student/course/{{ course.id }}" class="nav-link active">
+                <i class="ph ph-book text-lg"></i>
+                <span>Course</span>
+            </a>
+        </nav>
+
+       
+
+        <!-- Logout -->
+        <div class="absolute bottom-0 w-full p-3">
+            <a href="/logout" class="nav-link text-red-500 hover:bg-red-50">
+                <i class="ph ph-sign-out text-lg"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content flex-1 p-6">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center gap-4 mb-4">
+                <a href="/student/dashboard" class="text-slate-400 hover:text-slate-600 transition md:hidden">
+                    <i class="ph ph-arrow-left text-xl"></i>
+                </a>
+                <h1 class="text-2xl font-bold text-slate-800">{{ course.title }}</h1>
+            </div>
+            <p class="text-slate-500">Complete assessments to earn XP and track your progress.</p>
+        </div>
+
+        <!-- Assessments Section -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i class="ph ph-exam text-brand-orange"></i>
+                Assessments
+            </h2>
+
+            {% if quizzes|length == 0 %}
+                <div class="bg-white rounded-xl p-10 text-center border border-slate-200">
+                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-3xl text-slate-400 mx-auto mb-4">
+                        <i class="ph ph-smiley-blank"></i>
+                    </div>
+                    <p class="text-slate-500">No active quizzes for this course yet.</p>
+                </div>
+            {% else %}
+                <div class="space-y-4">
+                    {% for quiz in quizzes %}
+                    <div class="quiz-card p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center text-xl">
+                                <i class="ph ph-pencil-circle"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 mb-1">{{ quiz.title }}</h3>
+                                <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                                    <span class="flex items-center gap-1">
+                                        <i class="ph ph-clock"></i> 
+                                        {{ quiz.duration_minutes }} mins
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <i class="ph ph-list-numbers"></i>
+                                        Graded
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <a href="/student/quiz_start/{{ quiz.id }}" 
+                           class="px-6 py-3 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 transition-colors text-center">
+                            Start Quiz
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Course Info -->
+        <div class="bg-white rounded-xl p-5 border border-slate-200">
+            <h3 class="font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                <i class="ph ph-info text-brand-blue"></i>
+                Course Information
+            </h3>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-600">Category</span>
+                    <span class="font-medium text-slate-800">{{ course.category }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-600">Total Assessments</span>
+                    <span class="font-medium text-slate-800">{{ quizzes|length }}</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+</body>
+</html>

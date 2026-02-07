@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ course.title }} | Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        // Modal for Creating New Quiz
+        function toggleCreateModal(show) {
+            document.getElementById('createQuizModal').style.display = show ? 'flex' : 'none';
+        }
+
+        // Modal for Editing Existing Quiz
+        function openEditModal(id, title, duration, isActive, courseId, maxAttempts) {
+            document.getElementById('editQuizModal').style.display = 'flex';
+            document.getElementById('edit_quiz_form').action = `/instructor/edit_quiz/${id}`;
+            
+            document.getElementById('edit_title').value = title;
+            document.getElementById('edit_duration').value = duration;
+            document.getElementById('edit_course_id').value = courseId;
+            document.getElementById('edit_attempts').value = maxAttempts || 1; // Set attempts value
+            
+            // Handle string "True"/"False" from Python or boolean true/false
+            if(isActive === 'True' || isActive === true) {
+                document.getElementById('edit_active').checked = true;
+            } else {
+                document.getElementById('edit_active').checked = false;
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editQuizModal').style.display = 'none';
+        }
+    </script>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+    <nav class="bg-white px-6 py-4 shadow-sm border-b border-slate-200 flex justify-between items-center sticky top-0 z-40">
+        <div class="flex items-center gap-4">
+            <a href="/instructor/courses" class="text-slate-400 hover:text-slate-600 transition">
+                <i class="ph-bold ph-arrow-left text-xl"></i>
+            </a>
+            <h1 class="font-bold text-xl text-slate-800">{{ course.title }}</h1>
+            <span class="px-2 py-1 bg-slate-100 text-slate-500 text-xs font-bold uppercase rounded">{{ course.category }}</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-sm text-slate-500 font-medium">Instructor Mode</span>
+        </div>
+    </nav>
+
+    <div class="max-w-5xl mx-auto mt-8 p-6">
+        
+        <div class="flex justify-between items-end mb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-800">Quizzes & Assessments</h2>
+                <p class="text-slate-500">Manage tests and view student grades.</p>
+            </div>
+            <button onclick="toggleCreateModal(true)" class="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition">
+                <i class="ph-bold ph-plus"></i> Add New Quiz
+            </button>
+        </div>
+
+        <div class="bg-indigo-900 rounded-xl p-6 mb-8 text-white flex flex-col md:flex-row justify-between items-center shadow-lg relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-16 -mt-16 pointer-events-none"></div>
+            
+            <div class="relative z-10 mb-4 md:mb-0">
+                <h3 class="font-bold text-lg text-white mb-1 flex items-center gap-2"><i class="ph-bold ph-file-csv"></i> Export Course Gradebook</h3>
+                <p class="text-indigo-200 text-sm">Download a CSV of all student scores, calculated averages, and final CA.</p>
+            </div>
+
+            <form action="/instructor/export_grades/{{ course.id }}" method="GET" class="flex items-end gap-3 relative z-10">
+                <div>
+                    <label class="text-[10px] uppercase font-bold text-indigo-300 block mb-1">Target CA Score</label>
+                    <div class="flex items-center gap-2 bg-indigo-800 rounded-lg px-3 py-2 border border-indigo-700">
+                        <span class="text-xs font-bold text-indigo-400">Scale to:</span>
+                        <input type="number" name="ca" value="40" class="w-12 bg-transparent font-bold text-white outline-none text-center placeholder-indigo-400">
+                    </div>
+                </div>
+                <button type="submit" class="bg-white text-indigo-900 px-4 py-3 rounded-lg font-bold hover:bg-indigo-50 flex items-center gap-2 shadow-sm transition h-[42px]">
+                    Export Data <i class="ph-bold ph-download-simple"></i>
+                </button>
+            </form>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="p-4 mb-6 rounded-xl border flex items-center gap-2 {% if category == 'success' %} bg-green-50 border-green-200 text-green-700 {% else %} bg-red-50 border-red-200 text-red-700 {% endif %}">
+                  <i class="ph-fill {% if category == 'success' %}ph-check-circle{% else %}ph-warning-circle{% endif %}"></i>
+                  {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="space-y-4">
+            {% if quizzes|length == 0 %}
+                <div class="text-center py-16 bg-white rounded-2xl border border-slate-200 border-dashed">
+                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 text-2xl">
+                        <i class="ph-bold ph-exam"></i>
+                    </div>
+                    <p class="text-slate-500 font-medium">No quizzes created yet.</p>
+                    <p class="text-slate-400 text-sm mt-1">Click "Add New Quiz" above to create your first assessment.</p>
+                </div>
+            {% endif %}
+
+            {% for quiz in quizzes %}
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between hover:shadow-md transition group gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg flex items-center justify-center text-2xl shrink-0
+                        {% if quiz.is_active %} bg-green-100 text-green-600 {% else %} bg-slate-100 text-slate-400 {% endif %}">
+                        <i class="ph-bold ph-exam"></i>
+                    </div>
+                    
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="font-bold text-lg text-slate-800">{{ quiz.title }}</h3>
+                            {% if quiz.is_active %}
+                                <span class="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase tracking-wide">Live</span>
+                            {% else %}
+                                <span class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wide">Draft</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center gap-4 text-xs text-slate-500 mt-1">
+                            <span class="flex items-center gap-1"><i class="ph-bold ph-clock"></i> {{ quiz.duration_minutes }} mins</span>
+                            <span class="flex items-center gap-1"><i class="ph-bold ph-calendar"></i> Created {{ quiz.created_at[:10] }}</span>
+                            <span class="flex items-center gap-1"><i class="ph-bold ph-arrows-clockwise"></i> {{ quiz.max_attempts }} Attempts</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2 self-start md:self-auto">
+                    <a href="{{ url_for('instructor_quiz_results', quiz_id=quiz.id) }}" 
+                       class="px-4 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg text-sm font-bold hover:bg-indigo-100 transition flex items-center gap-2">
+                        <i class="ph-bold ph-chart-bar"></i> Results
+                    </a>
+
+                    <a href="/instructor/quiz/{{ quiz.id }}" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-50 transition">
+                        Questions
+                    </a>
+                    
+                    <button onclick="openEditModal('{{ quiz.id }}', '{{ quiz.title }}', '{{ quiz.duration_minutes }}', '{{ quiz.is_active }}', '{{ course.id }}', '{{ quiz.max_attempts }}')" 
+                            class="w-10 h-10 flex items-center justify-center border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition" title="Settings">
+                        <i class="ph-bold ph-gear"></i>
+                    </button>
+
+                    <a href="/instructor/delete_quiz/{{ quiz.id }}" onclick="return confirm('Are you sure? This will delete the quiz and all its questions.')" 
+                       class="w-10 h-10 flex items-center justify-center border border-slate-200 rounded-lg text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition" title="Delete">
+                        <i class="ph-bold ph-trash"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="createQuizModal" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
+            <div class="bg-indigo-600 p-6 flex justify-between items-center">
+                <h3 class="text-white font-bold text-lg">New Quiz</h3>
+                <button onclick="toggleCreateModal(false)" class="text-indigo-200 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
+            </div>
+            <form action="/instructor/create_quiz/{{ course.id }}" method="POST" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Quiz Title</label>
+                    <input type="text" name="title" required placeholder="e.g. Mid-term Exam" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Duration (Minutes)</label>
+                        <input type="number" name="duration" value="30" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Max Attempts</label>
+                        <select name="max_attempts" class="w-full p-3 border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                            <option value="1">1 Attempt</option>
+                            <option value="2">2 Attempts</option>
+                            <option value="3">3 Attempts</option>
+                            <option value="5">5 Attempts</option>
+                            <option value="100">Unlimited</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">Create Quiz</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editQuizModal" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+            <div class="bg-slate-800 p-6 flex justify-between items-center">
+                <h3 class="text-white font-bold text-lg">Quiz Settings</h3>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
+            </div>
+            
+            <form id="edit_quiz_form" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="course_id" id="edit_course_id">
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Quiz Title</label>
+                    <input type="text" name="title" id="edit_title" required class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                </div>
+                
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Duration (Mins)</label>
+                        <input type="number" name="duration" id="edit_duration" required class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                    </div>
+                    <div class="flex-1">
+                         <label class="block text-sm font-bold text-slate-700 mb-1">Max Attempts</label>
+                         <select name="max_attempts" id="edit_attempts" class="w-full p-3 border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                             <option value="1">1 Attempt</option>
+                             <option value="2">2 Attempts</option>
+                             <option value="3">3 Attempts</option>
+                             <option value="5">5 Attempts</option>
+                             <option value="100">Unlimited</option>
+                         </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:border-indigo-300 transition" onclick="document.getElementById('edit_active').click()">
+                    <input type="checkbox" name="is_active" id="edit_active" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500">
+                    <div>
+                        <label for="edit_active" class="block text-sm font-bold text-slate-700 cursor-pointer">Make Quiz Active?</label>
+                        <p class="text-xs text-slate-500">If unchecked, students cannot see this quiz.</p>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" onclick="closeEditModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition">Cancel</button>
+                    <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

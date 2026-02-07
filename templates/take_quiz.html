@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ quiz.title }} | Attempt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        /* Disable Text Selection */
+        body { user-select: none; -webkit-user-select: none; }
+    </style>
+
+    <script>
+        let duration = {{ quiz.duration_minutes }} * 60; // Convert to seconds
+        let violations = 0;
+        const MAX_VIOLATIONS = 3;
+
+        // --- 1. COUNTDOWN TIMER ---
+        function startTimer() {
+            const timerElement = document.getElementById('timer');
+            const interval = setInterval(function () {
+                let minutes = parseInt(duration / 60, 10);
+                let seconds = parseInt(duration % 60, 10);
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                timerElement.textContent = minutes + ":" + seconds;
+                
+                // Visual Warning: Red color when less than 5 mins
+                if (duration < 300) {
+                    timerElement.classList.add('text-red-600', 'animate-pulse');
+                }
+
+                if (--duration < 0) {
+                    clearInterval(interval);
+                    alert("Time is up! Submitting your quiz now.");
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        // --- 2. TAB SWITCH DETECTION ---
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) {
+                violations++;
+                document.getElementById('violation_count_input').value = violations;
+                
+                if (violations >= MAX_VIOLATIONS) {
+                    alert("SECURITY VIOLATION: You have switched tabs too many times. Your quiz is being auto-submitted.");
+                    submitQuiz();
+                } else {
+                    alert(`WARNING: You are not allowed to leave this page!\nViolations: ${violations}/${MAX_VIOLATIONS}`);
+                }
+            }
+        });
+
+        // --- 3. DISABLE RIGHT CLICK ---
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // --- SUBMISSION LOGIC ---
+        function submitQuiz() {
+            // Collect all answers
+            let answers = {};
+            const form = document.getElementById('quizForm');
+            const formData = new FormData(form);
+            
+            // Loop through inputs to build JSON
+            // Note: We need to handle Radio buttons specifically
+            const inputs = form.querySelectorAll('input[type="radio"]:checked, input[type="text"], textarea');
+            inputs.forEach(input => {
+                let name = input.name; 
+                // name is 'question_15', we need '15'
+                let qId = name.split('_')[1];
+                if(qId) {
+                    answers[qId] = input.value;
+                }
+            });
+
+            document.getElementById('final_answers_input').value = JSON.stringify(answers);
+            document.getElementById('realSubmitBtn').click();
+        }
+
+        window.onload = startTimer;
+    </script>
+</head>
+<body class="bg-slate-50 min-h-screen pb-20">
+
+    <div class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm px-6 py-4 flex justify-between items-center">
+        <div>
+            <h1 class="font-bold text-slate-800 text-lg">{{ quiz.title }}</h1>
+            <p class="text-xs text-slate-500">Do not refresh or leave this page.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="text-right">
+                <span class="block text-[10px] font-bold uppercase text-slate-400">Time Left</span>
+                <span id="timer" class="font-mono text-2xl font-bold text-slate-800">00:00</span>
+            </div>
+            <button onclick="submitQuiz()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
+                Submit Quiz
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-3xl mx-auto mt-8 px-6 space-y-8">
+        
+        <form id="quizForm" action="/student/submit_quiz/{{ quiz.id }}" method="POST">
+            <input type="hidden" name="final_answers" id="final_answers_input">
+            <input type="hidden" name="violation_count" id="violation_count_input" value="0">
+            <button type="submit" id="realSubmitBtn" class="hidden"></button>
+
+            {% for q in questions %}
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex gap-4 mb-4">
+                    <span class="flex-shrink-0 w-8 h-8 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">
+                        {{ loop.index }}
+                    </span>
+                    <h3 class="font-bold text-slate-800 text-lg leading-relaxed select-none">
+                        {{ q.question_text }}
+                    </h3>
+                </div>
+
+                <div class="ml-12">
+                    {% if q.question_type == 'MCQ' %}
+                        <div class="space-y-3">
+                            {% for opt in q.options %}
+                            <label class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition group">
+                                <input type="radio" name="question_{{ q.id }}" value="{{ opt.id }}" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-slate-700 font-medium group-hover:text-slate-900 select-none">{{ opt.content }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    
+                    {% elif q.question_type == 'FILL_BLANK' %}
+                        <input type="text" name="question_{{ q.id }}" placeholder="Type your answer here..." 
+                               class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800" autocomplete="off">
+                    
+                    {% elif q.question_type == 'THEORY' %}
+                        <textarea name="question_{{ q.id }}" rows="4" placeholder="Explain your answer..." 
+                                  class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800"></textarea>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </form>
+
+        <div class="py-10 text-center">
+            <p class="text-slate-400 text-sm mb-4">Double check your answers before submitting.</p>
+            <button onclick="submitQuiz()" class="w-full md:w-auto px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-xl shadow-indigo-200">
+                Finish & Submit
+            </button>
+        </div>
+
+    </div>
+
+</body>
+</html>
