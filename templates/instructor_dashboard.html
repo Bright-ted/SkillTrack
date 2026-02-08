@@ -20,51 +20,57 @@
         </button>
     </div>
 
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
-        <div class="h-full flex flex-col justify-between">
-            <div>
-                <div class="p-6 hidden md:flex items-center gap-3 border-b border-slate-100">
-                    <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white">
-                        <i class="ph-bold ph-chalkboard-teacher text-lg"></i>
-                    </div>
-                    <span class="font-bold text-lg text-slate-800 tracking-tight">SkillTrack Pro</span>
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col justify-between">
+        <div>
+            <div class="p-6 hidden md:flex items-center gap-3 border-b border-slate-100">
+                <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white">
+                    <i class="ph-bold ph-chalkboard-teacher text-lg"></i>
                 </div>
-
-                <div class="md:hidden p-4 flex justify-end">
-                    <button onclick="toggleSidebar()" class="text-slate-500">
-                        <i class="ph-bold ph-x text-2xl"></i>
-                    </button>
-                </div>
-
-                <nav class="mt-2 md:mt-6 px-4 space-y-2">
-                    <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-xl font-bold transition">
-                        <i class="ph-bold ph-squares-four text-xl"></i>
-                        <span>Overview</span>
-                    </a>
-                    
-                    <a href="/instructor/courses" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
-                        <i class="ph-bold ph-books text-xl"></i>
-                        <span>My Courses</span>
-                    </a>
-
-                    <a href="/instructor/students" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
-                        <i class="ph-bold ph-users-three text-xl"></i>
-                        <span>Students</span>
-                    </a>
-
-                    <a href="/instructor/gradebook" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
-                        <i class="ph-bold ph-chart-bar text-xl"></i>
-                        <span>Gradebook</span>
-                    </a>
-                </nav>
+                <span class="font-bold text-lg text-slate-800 tracking-tight">SkillTrack Pro</span>
             </div>
 
-            <div class="p-4 border-t border-slate-100">
-                <a href="/logout" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl font-bold transition">
-                    <i class="ph-bold ph-sign-out text-xl"></i>
-                    <span>Log Out</span>
+            <div class="md:hidden p-4 flex justify-end">
+                <button onclick="toggleSidebar()" class="text-slate-500">
+                    <i class="ph-bold ph-x text-2xl"></i>
+                </button>
+            </div>
+
+            <nav class="mt-2 md:mt-6 px-4 space-y-2">
+                <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-xl font-bold transition">
+                    <i class="ph-bold ph-squares-four text-xl"></i>
+                    <span>Overview</span>
                 </a>
+                
+                <a href="/instructor/courses" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
+                    <i class="ph-bold ph-files text-xl"></i>
+                    <span>Course Manager</span>
+                </a>
+
+                <a href="/instructor/students" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
+                    <i class="ph-bold ph-users text-xl"></i>
+                    <span>Students</span>
+                </a>
+
+                <a href="/instructor/reports" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
+                    <i class="ph-bold ph-chart-bar text-xl"></i>
+                    <span>Reports</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="p-4 border-t border-slate-100">
+            <div class="flex items-center gap-3 px-3 py-2 mb-2">
+                <div class="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center font-bold">
+                    {{ user.full_name[0] }}
+                </div>
+                <div class="text-sm">
+                    <p class="font-bold text-slate-800">{{ user.full_name }}</p>
+                    <p class="text-slate-500 text-xs uppercase">Instructor</p>
+                </div>
             </div>
+            <a href="/logout" class="flex items-center justify-center gap-2 w-full py-2 border border-slate-200 text-slate-600 rounded-lg hover:border-red-500 hover:text-red-500 transition text-sm font-bold">
+                <i class="ph-bold ph-sign-out"></i> Logout
+            </a>
         </div>
     </aside>
 
@@ -72,78 +78,87 @@
 
     <main class="w-full md:ml-64 p-4 md:p-8 transition-all duration-300">
         
-        <div class="mb-8">
-            <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Welcome back, Instructor! 👋</h1>
-            <p class="text-slate-500 mt-1">Here's what's happening with your courses today.</p>
-        </div>
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
+                <p class="text-slate-500">Real-time analytics for {{ profile.department }}.</p>
+            </div>
+            <a href="/instructor/courses" class="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 shadow-lg shadow-purple-200 transition">
+                <i class="ph-bold ph-plus"></i> New Course
+            </a>
+        </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-2xl">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center text-2xl">
                     <i class="ph-bold ph-books"></i>
                 </div>
                 <div>
-                    <p class="text-xs font-bold text-slate-400 uppercase">Active Courses</p>
-                    <p class="text-2xl font-bold text-slate-800">{{ stats.total_courses }}</p>
+                    <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">My Courses</p>
+                    <h3 class="text-2xl font-bold text-slate-800">{{ stats.courses }}</h3>
                 </div>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center text-2xl">
-                    <i class="ph-bold ph-users"></i>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-2xl">
+                    <i class="ph-bold ph-student"></i>
                 </div>
                 <div>
-                    <p class="text-xs font-bold text-slate-400 uppercase">Total Students</p>
-                    <p class="text-2xl font-bold text-slate-800">{{ stats.total_students }}</p>
+                    <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Students</p>
+                    <h3 class="text-2xl font-bold text-slate-800">{{ stats.students }}</h3>
                 </div>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-2xl">
-                    <i class="ph-bold ph-check-circle"></i>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="w-12 h-12 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center text-2xl">
+                    <i class="ph-bold ph-warning-circle"></i>
                 </div>
                 <div>
-                    <p class="text-xs font-bold text-slate-400 uppercase">Quizzes Taken</p>
-                    <p class="text-2xl font-bold text-slate-800">{{ stats.total_attempts }}</p>
+                    <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Needs Review</p>
+                    <h3 class="text-2xl font-bold text-slate-800">{{ stats.reviews }}</h3>
                 </div>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center text-2xl">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="w-12 h-12 bg-green-50 text-green-600 rounded-xl flex items-center justify-center text-2xl">
                     <i class="ph-bold ph-trend-up"></i>
                 </div>
                 <div>
-                    <p class="text-xs font-bold text-slate-400 uppercase">Avg. Score</p>
-                    <p class="text-2xl font-bold text-slate-800">{{ stats.avg_score }}%</p>
+                    <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Avg. Score</p>
+                    <h3 class="text-2xl font-bold text-slate-800">{{ stats.avg_score }}%</h3>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-            
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                 <h3 class="font-bold text-lg text-slate-800 mb-6">Recent Student Activity</h3>
-                <div class="space-y-6">
-                    {% if not recent_activity %}
-                        <p class="text-slate-400 text-center py-8">No recent activity found.</p>
+                
+                <div class="space-y-4">
+                    {% if activity|length == 0 %}
+                        <div class="text-center py-10 text-slate-400">
+                            <i class="ph-duotone ph-ghost text-4xl mb-2"></i>
+                            <p>No activity yet. Create a course to get started!</p>
+                        </div>
                     {% else %}
-                        {% for item in recent_activity %}
-                        <div class="flex items-start gap-4 pb-6 border-b border-slate-50 last:border-0 last:pb-0">
-                            <div class="w-10 h-10 rounded-full bg-slate-100 flex-shrink-0 flex items-center justify-center font-bold text-slate-500 text-sm">
-                                {{ item.student_name[0] }}
+                        {% for item in activity %}
+                        <div class="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-lg transition border-b border-slate-50 last:border-0">
+                            <div class="w-10 h-10 rounded-full bg-slate-100 flex-shrink-0 flex items-center justify-center text-sm font-bold text-slate-600">
+                                {{ item.users.full_name[0] }}
                             </div>
-                            <div class="flex-1">
-                                <p class="text-slate-800 text-sm">
-                                    <span class="font-bold">{{ item.student_name }}</span> 
-                                    completed 
-                                    <span class="font-bold text-indigo-600">{{ item.quiz_title }}</span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-bold text-slate-800 truncate">
+                                    {{ item.users.full_name }} 
+                                    <span class="font-normal text-slate-500">completed</span> 
+                                    {{ item.courses.title }}
                                 </p>
-                                <p class="text-xs text-slate-400 mt-1">{{ item.date }}</p>
+                                <p class="text-xs text-slate-400">{{ item.submitted_at[:10] }}</p>
                             </div>
+
                             {% if item.score >= 50 %}
-                                <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded">Pass ({{ item.score }}%)</span>
+                                <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded whitespace-nowrap">Pass ({{ item.score }}%)</span>
                             {% else %}
-                                <span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded">Fail ({{ item.score }}%)</span>
+                                <span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded whitespace-nowrap">Fail ({{ item.score }}%)</span>
                             {% endif %}
                         </div>
                         {% endfor %}
@@ -162,12 +177,12 @@
                         <i class="ph-bold ph-question text-xl"></i> Add Question
                     </a>
 
-                    <a href="/instructor/gradebook" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-bold transition">
-                        <i class="ph-bold ph-file-text text-xl"></i> View Reports
+                    <a href="/instructor/gradebook" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
+                        <i class="ph-bold ph-microsoft-excel-logo text-xl"></i>
+                        <span>Gradebook & Export</span>
                     </a>
                 </div>
             </div>
-
         </div>
     </main>
 
@@ -177,16 +192,13 @@
             const overlay = document.getElementById('sidebarOverlay');
             
             if (sidebar.classList.contains('-translate-x-full')) {
-                // Open Sidebar
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
             } else {
-                // Close Sidebar
                 sidebar.classList.add('-translate-x-full');
                 overlay.classList.add('hidden');
             }
         }
     </script>
-
 </body>
 </html>
