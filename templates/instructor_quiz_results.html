@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Results: {{ quiz.title }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
-<body class="bg-slate-50 min-h-screen p-6">
+<body class="bg-slate-50 min-h-screen p-4 md:p-6 font-sans">
 
-    <div class="max-w-6xl mx-auto mb-8 flex justify-between items-center">
+    <div class="max-w-6xl mx-auto mb-6 md:mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <a href="/instructor/course/{{ quiz.course_id }}" class="text-slate-500 hover:text-slate-800 flex items-center gap-2 mb-2 font-bold text-sm">
                 <i class="ph-bold ph-arrow-left"></i> Back to Course
             </a>
-            <h1 class="text-3xl font-bold text-slate-800">Results: {{ quiz.title }}</h1>
+            <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Results: {{ quiz.title }}</h1>
         </div>
-        <div class="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm flex gap-6">
+        
+        <div class="w-full md:w-auto bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between md:justify-center gap-6">
             <div class="text-center">
                 <span class="block text-2xl font-bold text-indigo-600">{{ students|length }}</span>
                 <span class="text-xs text-slate-500 font-bold uppercase">Students</span>
@@ -25,72 +28,62 @@
     <div class="max-w-6xl mx-auto space-y-4">
         
         {% if students|length == 0 %}
-            <div class="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
-                <p class="text-slate-400 font-medium">No students have taken this quiz yet.</p>
+            <div class="bg-white rounded-xl p-12 text-center border border-dashed border-slate-300">
+                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                    <i class="ph-bold ph-users text-3xl"></i>
+                </div>
+                <p class="text-slate-500 font-medium">No students have taken this quiz yet.</p>
             </div>
         {% endif %}
 
-        {% for id, s in students.items() %}
+        {% for student_id, student in students.items() %}
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             
-            <div class="p-6 flex items-center justify-between bg-slate-50/50">
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-                        {{ s.name[0] }}
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-slate-800">{{ s.name }}</h3>
-                        <p class="text-xs text-slate-500">{{ s.email }}</p>
-                    </div>
+            <div class="bg-slate-50 p-4 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                <div>
+                    <h3 class="font-bold text-lg text-slate-800">{{ student.name }}</h3>
+                    <p class="text-sm text-slate-500">{{ student.email }}</p>
                 </div>
-                
-                <div class="flex items-center gap-8">
-                    <div class="text-right">
-                        <span class="block text-xs text-slate-400 font-bold uppercase">Attempts</span>
-                        <span class="font-bold text-slate-700">{{ s.attempts|length }}</span>
-                    </div>
-                    <div class="text-right">
-                        <span class="block text-xs text-slate-400 font-bold uppercase">Best Score</span>
-                        <span class="font-bold {% if s.best_score >= 50 %} text-green-600 {% else %} text-red-600 {% endif %}">
-                            {{ s.best_score }}%
-                        </span>
-                    </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold uppercase text-slate-400">Best Score:</span>
+                    <span class="text-lg font-bold {% if student.best_score >= 50 %} text-green-600 {% else %} text-red-600 {% endif %}">
+                        {{ student.best_score }}%
+                    </span>
                 </div>
             </div>
 
-            <div class="border-t border-slate-100">
-                <table class="w-full text-sm text-left">
-                    <thead class="text-xs text-slate-400 uppercase bg-slate-50 border-b border-slate-100">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]"> <thead class="bg-white text-slate-500 border-b border-slate-100 text-xs uppercase">
                         <tr>
-                            <th class="px-6 py-3">Submission Date</th>
-                            <th class="px-6 py-3">Score</th>
-                            <th class="px-6 py-3">Feedback</th>
+                            <th class="px-6 py-3 font-bold">Attempt Date</th>
+                            <th class="px-6 py-3 font-bold">Score</th>
+                            <th class="px-6 py-3 font-bold">Status</th>
                             <th class="px-6 py-3 text-right">Action</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for attempt in s.attempts %}
+                    <tbody class="divide-y divide-slate-50">
+                        {% for attempt in student.attempts %}
                         <tr class="hover:bg-slate-50 transition">
-                            <td class="px-6 py-4 text-slate-600">
-                                {{ attempt.submitted_at[:10] }} <span class="text-slate-400 ml-1">{{ attempt.submitted_at[11:16] }}</span>
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                {{ attempt.submitted_at[:16].replace('T', ' ') }}
                             </td>
                             <td class="px-6 py-4 font-bold">
                                 {% if attempt.score >= 50 %}
-                                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded">{{ attempt.score }}%</span>
+                                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">{{ attempt.score }}%</span>
                                 {% else %}
-                                    <span class="bg-red-100 text-red-700 px-2 py-1 rounded">{{ attempt.score }}%</span>
+                                    <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">{{ attempt.score }}%</span>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 text-slate-500 italic">
+                            <td class="px-6 py-4 text-slate-500 text-sm">
                                 {% if attempt.feedback %}
-                                    <span class="text-indigo-600"><i class="ph-fill ph-chat-circle-text"></i> Has Feedback</span>
+                                    <span class="text-indigo-600 flex items-center gap-1 font-medium"><i class="ph-fill ph-chat-circle-text"></i> Feedback Given</span>
                                 {% else %}
-                                    -
+                                    <span class="text-slate-400">Pending Review</span>
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <a href="/instructor/grade_attempt/{{ attempt.id }}" class="text-indigo-600 hover:text-indigo-800 font-bold hover:underline">
-                                    Review / Grade
+                                <a href="/instructor/grade_attempt/{{ attempt.id }}" class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-bold text-sm hover:underline">
+                                    Review <i class="ph-bold ph-arrow-right"></i>
                                 </a>
                             </td>
                         </tr>

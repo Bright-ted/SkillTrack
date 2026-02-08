@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Course Manager | SkillTrack</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -18,55 +19,76 @@
         }
     </script>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans flex">
+<body class="bg-slate-50 min-h-screen font-sans">
 
-    <aside class="w-64 bg-white border-r border-slate-200 min-h-screen fixed flex flex-col justify-between z-10">
+    <div class="md:hidden bg-white border-b border-slate-200 p-4 flex justify-between items-center sticky top-0 z-30">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white">
+                <i class="ph-bold ph-chalkboard-teacher text-lg"></i>
+            </div>
+            <span class="font-bold text-lg text-slate-800">SkillTrack</span>
+        </div>
+        <button onclick="toggleSidebar()" class="text-slate-600 focus:outline-none">
+            <i class="ph-bold ph-list text-2xl"></i>
+        </button>
+    </div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col justify-between">
         <div>
-            <div class="p-6 flex items-center gap-3 border-b border-slate-100">
+            <div class="p-6 hidden md:flex items-center gap-3 border-b border-slate-100">
                 <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white">
                     <i class="ph-bold ph-chalkboard-teacher text-lg"></i>
                 </div>
                 <span class="font-bold text-lg text-slate-800 tracking-tight">SkillTrack Pro</span>
             </div>
-            <nav class="mt-6 px-4 space-y-2">
+
+            <div class="md:hidden p-4 flex justify-end">
+                <button onclick="toggleSidebar()" class="text-slate-500">
+                    <i class="ph-bold ph-x text-2xl"></i>
+                </button>
+            </div>
+
+            <nav class="mt-2 md:mt-6 px-4 space-y-2">
                 <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
                     <i class="ph-bold ph-squares-four text-xl"></i>
                     <span>Overview</span>
                 </a>
+                
                 <a href="/instructor/courses" class="flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-xl font-bold transition">
-    <i class="ph-bold ph-files text-xl"></i>
-    <span>Course Manager</span>
-</a>
-                <a href="/instructor/students" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
-                    <i class="ph-bold ph-users text-xl"></i>
-                    <span>Student Tracker</span>
+                    <i class="ph-bold ph-books text-xl"></i>
+                    <span>My Courses</span>
                 </a>
-                <a href="/instructor/reports" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
+
+                <a href="/instructor/students" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
+                    <i class="ph-bold ph-users-three text-xl"></i>
+                    <span>Students</span>
+                </a>
+
+                <a href="/instructor/gradebook" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
                     <i class="ph-bold ph-chart-bar text-xl"></i>
-                    <span>Reports</span>
+                    <span>Gradebook</span>
                 </a>
             </nav>
         </div>
+
         <div class="p-4 border-t border-slate-100">
-            <div class="text-sm">
-                    <p class="font-bold text-slate-800">{{ user.full_name }}</p>
-                    <p class="text-slate-500 text-xs uppercase">Instructor</p>
-                </div>
-            <a href="/logout" class="flex items-center justify-center gap-2 w-full py-2 border border-slate-200 text-slate-600 rounded-lg hover:border-red-500 hover:text-red-500 transition text-sm font-bold">
-                <i class="ph-bold ph-sign-out"></i> Logout
+            <a href="/logout" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl font-bold transition">
+                <i class="ph-bold ph-sign-out text-xl"></i>
+                <span>Log Out</span>
             </a>
-            
         </div>
     </aside>
 
-    <main class="ml-64 flex-1 p-8">
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden glass"></div>
+
+    <main class="w-full md:ml-64 p-4 md:p-8 transition-all duration-300">
         
-        <div class="flex justify-between items-center mb-8">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-slate-800">My Courses</h1>
-                <p class="text-slate-500">Manage your subjects and quizzes.</p>
+                <h1 class="text-2xl font-bold text-slate-800">Course Management</h1>
+                <p class="text-slate-500">Create and manage your classes.</p>
             </div>
-            <button onclick="toggleModal(true)" class="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 shadow-lg shadow-purple-200 transition">
+            <button onclick="toggleModal(true)" class="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-lg shadow-purple-200 transition">
                 <i class="ph-bold ph-plus"></i> Create New Course
             </button>
         </div>
@@ -74,7 +96,8 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
-              <div class="p-4 mb-6 rounded-xl border {% if category == 'success' %} bg-green-50 border-green-200 text-green-700 {% else %} bg-red-50 border-red-200 text-red-700 {% endif %}">
+              <div class="p-4 mb-6 rounded-xl border flex items-center gap-2 {% if category == 'success' %} bg-green-50 border-green-200 text-green-700 {% else %} bg-red-50 border-red-200 text-red-700 {% endif %}">
+                  <i class="ph-fill {% if category == 'success' %}ph-check-circle{% else %}ph-warning-circle{% endif %}"></i>
                   {{ message }}
               </div>
             {% endfor %}
@@ -82,64 +105,53 @@
         {% endwith %}
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
             {% if courses|length == 0 %}
-            <div class="col-span-full text-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed">
-                <div class="w-16 h-16 bg-purple-50 text-purple-400 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="ph-duotone ph-books text-3xl"></i>
+                <div class="col-span-full py-12 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                        <i class="ph-bold ph-books text-3xl"></i>
+                    </div>
+                    <p class="text-slate-500 font-medium">You haven't created any courses yet.</p>
+                    <button onclick="toggleModal(true)" class="text-purple-600 font-bold mt-2 hover:underline">Create your first course</button>
                 </div>
-                <h3 class="text-lg font-bold text-slate-700">No Courses Yet</h3>
-                <p class="text-slate-500 mb-6">Create your first course to start adding quizzes.</p>
-                <button onclick="toggleModal(true)" class="text-purple-600 font-bold hover:underline">Create Course Now</button>
-            </div>
             {% endif %}
 
             {% for course in courses %}
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition group">
-                <div class="flex justify-between items-start mb-4">
-                    <span class="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold uppercase rounded-full tracking-wider">
-                        {{ course.category }}
-                    </span>
-                    <button class="text-slate-300 hover:text-red-500 transition">
-                        <i class="ph-bold ph-trash"></i>
-                    </button>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-purple-300 transition group flex flex-col justify-between h-full">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wide rounded-full">{{ course.category }}</span>
+                        <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-purple-600 transition">
+                            <i class="ph-fill ph-caret-right text-lg"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2 leading-tight">{{ course.title }}</h3>
+                    <p class="text-slate-500 text-sm line-clamp-2 mb-4">{{ course.description }}</p>
                 </div>
                 
-                <h3 class="text-xl font-bold text-slate-800 mb-2">{{ course.title }}</h3>
-                <p class="text-slate-500 text-sm mb-6 line-clamp-2">{{ course.description }}</p>
-                
-                <div class="flex items-center justify-between border-t border-slate-50 pt-4">
-    <div class="flex items-center gap-2 text-slate-400 text-sm">
-        <i class="ph-bold ph-files"></i> 
-        <span>0 Quizzes</span>
-    </div>
-    <a href="/instructor/course/{{ course.id }}" class="px-4 py-2 bg-slate-50 text-slate-700 rounded-lg text-sm font-bold group-hover:bg-purple-600 group-hover:text-white transition">
-        Manage
-    </a>
-</div>
+                <div class="pt-4 border-t border-slate-50 mt-auto">
+                    <a href="/instructor/course/{{ course.id }}" class="block w-full py-2 text-center bg-purple-50 text-purple-700 font-bold rounded-lg hover:bg-purple-600 hover:text-white transition">
+                        Manage Course
+                    </a>
+                </div>
             </div>
             {% endfor %}
-
         </div>
+
     </main>
 
-    <div id="createCourseModal" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
-            
+    <div id="createCourseModal" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
             <div class="bg-purple-600 p-6 flex justify-between items-center">
                 <h3 class="text-white font-bold text-lg">Create New Course</h3>
-                <button onclick="toggleModal(false)" class="text-purple-200 hover:text-white">
-                    <i class="ph-bold ph-x text-xl"></i>
-                </button>
+                <button onclick="toggleModal(false)" class="text-purple-200 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
             </div>
-
+            
             <form action="/instructor/create_course" method="POST" class="p-6 space-y-4">
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Course Title</label>
-                    <input type="text" name="title" required placeholder="e.g. Introduction to Python" 
-                           class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
+                    <input type="text" name="title" required placeholder="e.g. Introduction to Python" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
                 </div>
-
+                
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Category</label>
                     <select name="category" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none bg-white">
@@ -166,9 +178,23 @@
                     </button>
                 </div>
             </form>
-
         </div>
     </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+    </script>
 
 </body>
 </html>

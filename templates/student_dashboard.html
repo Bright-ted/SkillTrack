@@ -2,445 +2,182 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard | SkillTrack</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard | SkillTrack</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <style>
-        /* Original color scheme */
-        .bg-brand-orange { background-color: #f97316; }
-        .text-brand-orange { color: #f97316; }
-        .bg-brand-blue { background-color: #1e3a8a; }
-        .text-brand-blue { color: #1e3a8a; }
-        
-        /* Custom styles */
-        .sidebar {
-            width: 250px;
-            transition: all 0.3s ease;
-        }
-        
-        .main-content {
-            margin-left: 250px;
-            transition: all 0.3s ease;
-        }
-        
-        .nav-link {
-            padding: 12px 16px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #64748b;
-        }
-        
-        .nav-link:hover {
-            background-color: #f1f5f9;
-            color: #1e293b;
-        }
-        
-        .nav-link.active {
-            background-color: #fef3c7;
-            color: #f97316;
-            font-weight: 600;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border-color: #f97316;
-        }
-        
-        .course-card {
-            background: white;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
-        }
-        
-        .course-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-            border-color: #f97316;
-        }
-        
-        .progress-bar {
-            background: #f1f1f9;
-            border-radius: 6px;
-            overflow: hidden;
-            height: 8px;
-        }
-        
-        .progress-fill {
-            background: linear-gradient(90deg, #f97316, #fb923c);
-            height: 100%;
-            border-radius: 6px;
-            transition: width 0.6s ease;
-        }
-        
-        .btn-primary {
-            background: #1e3a8a;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-        
-        .btn-primary:hover {
-            background: #1e40af;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
-        }
-        
-        .modal-backdrop {
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(4px);
-        }
-    </style>
     <script>
-        // --- JOIN MODAL ---
-        function openJoinModal(courseId, courseTitle) {
-            const modal = document.getElementById('joinModal');
-            document.getElementById('modalCourseTitle').innerText = courseTitle;
-            document.getElementById('confirmJoinBtn').href = "/student/join_course/" + courseId;
-            modal.classList.remove('hidden');
-        }
-
-        function closeJoinModal() {
-            document.getElementById('joinModal').classList.add('hidden');
-        }
-
-        // --- DROP MODAL ---
         function openDropModal(courseId, courseTitle) {
-            const modal = document.getElementById('dropModal');
+            document.getElementById('dropModal').classList.remove('hidden');
+            document.getElementById('dropModal').classList.add('flex');
             document.getElementById('dropCourseTitle').innerText = courseTitle;
             document.getElementById('confirmDropBtn').href = "/student/drop_course/" + courseId;
-            modal.classList.remove('hidden');
         }
 
         function closeDropModal() {
             document.getElementById('dropModal').classList.add('hidden');
-        }
-        
-        // Close modals on outside click
-        window.onclick = function(event) {
-            const joinModal = document.getElementById('joinModal');
-            const dropModal = document.getElementById('dropModal');
-            
-            if (event.target === joinModal) {
-                closeJoinModal();
-            }
-            if (event.target === dropModal) {
-                closeDropModal();
-            }
+            document.getElementById('dropModal').classList.remove('flex');
         }
     </script>
 </head>
-<body class="bg-slate-50 min-h-screen flex">
+<body class="bg-slate-50 min-h-screen font-sans">
 
-    <!-- Sidebar Navigation -->
-    <aside class="sidebar bg-white border-r border-slate-200 min-h-screen fixed left-0 top-0 z-40">
-        <!-- Logo -->
-        <div class="p-6 border-b border-slate-200">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-brand-orange rounded-lg flex items-center justify-center text-white font-bold">
-                    <i class="ph ph-graduation-cap text-lg"></i>
-                </div>
-                <span class="font-bold text-xl text-brand-blue">SkillTrack</span>
+    <div class="md:hidden bg-white border-b border-slate-200 p-4 flex justify-between items-center sticky top-0 z-30">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
+                <i class="ph-bold ph-student text-lg"></i>
             </div>
+            <span class="font-bold text-lg text-slate-800">SkillTrack</span>
+        </div>
+        <button onclick="toggleSidebar()" class="text-slate-600 focus:outline-none">
+            <i class="ph-bold ph-list text-2xl"></i>
+        </button>
+    </div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col justify-between">
+        <div>
+            <div class="p-6 hidden md:flex items-center gap-3 border-b border-slate-100">
+                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
+                    <i class="ph-bold ph-student text-lg"></i>
+                </div>
+                <span class="font-bold text-lg text-slate-800 tracking-tight">Student Portal</span>
+            </div>
+
+            <div class="md:hidden p-4 flex justify-end">
+                <button onclick="toggleSidebar()" class="text-slate-500">
+                    <i class="ph-bold ph-x text-2xl"></i>
+                </button>
+            </div>
+
+            <nav class="mt-2 md:mt-6 px-4 space-y-2">
+                <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold transition">
+                    <i class="ph-bold ph-squares-four text-xl"></i>
+                    <span>My Courses</span>
+                </a>
+                
+                <a href="/student/grades" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
+                    <i class="ph-bold ph-chart-bar text-xl"></i>
+                    <span>My Grades</span>
+                </a>
+
+                <a href="/student/join_course" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition">
+                    <i class="ph-bold ph-plus-circle text-xl"></i>
+                    <span>Join Class</span>
+                </a>
+            </nav>
         </div>
 
-        <!-- User Profile -->
-        <div class="p-6 border-b border-slate-200">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-brand-orange rounded-full flex items-center justify-center text-white text-lg font-semibold">
-                    {{ user.full_name[0] }}
-                </div>
-                <div>
-                    <p class="font-semibold text-slate-800">{{ user.full_name }}</p>
-                    <p class="text-sm text-slate-500 flex items-center gap-1">
-                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                        Student
-                    </p>
-                </div>
+        <div class="p-4 border-t border-slate-100">
+            <div class="px-4 py-3 mb-2 bg-slate-50 rounded-xl">
+                <p class="text-xs font-bold text-slate-400 uppercase">Student ID</p>
+                <p class="text-sm font-bold text-slate-700 font-mono">{{ student.student_id }}</p>
             </div>
-        </div>
-
-        <!-- Navigation Links -->
-        <nav class="p-4 space-y-1">
-            <a href="/student/dashboard" class="nav-link active">
-                <i class="ph ph-squares-four text-lg"></i>
-                Dashboard
-            </a>
-            <a href="/student/grades" class="nav-link">
-                <i class="ph ph-chart-line text-lg"></i>
-                My Grades
-            </a>
-        </nav>
-
-        <!-- Logout Button -->
-        <div class="absolute bottom-0 w-full p-4 border-t border-slate-200">
-            <a href="/logout" class="nav-link text-red-500 hover:bg-red-50 hover:text-red-600">
-                <i class="ph ph-sign-out text-lg"></i>
-                Logout
+            <a href="/logout" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl font-bold transition">
+                <i class="ph-bold ph-sign-out text-xl"></i>
+                <span>Log Out</span>
             </a>
         </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="main-content flex-1 p-6">
-        <!-- Flash Messages -->
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden glass"></div>
+
+    <main class="w-full md:ml-64 p-4 md:p-8 transition-all duration-300">
+        
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">My Courses</h1>
+                <p class="text-slate-500">Continue learning where you left off.</p>
+            </div>
+            <a href="/student/join_course" class="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">
+                <i class="ph-bold ph-plus"></i> Join New Class
+            </a>
+        </div>
+
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
-            <div class="mb-6 space-y-3">
-              {% for category, message in messages %}
-                <div class="p-4 rounded-lg border-l-4 flex items-center gap-3
-                    {% if category == 'success' %} 
-                        bg-green-50 border-green-500 text-green-800 
-                    {% else %} 
-                        bg-blue-50 border-blue-500 text-blue-800 
-                    {% endif %}">
-                    <i class="ph {% if category == 'success' %} ph-check-circle {% else %} ph-info {% endif %} text-lg"></i>
-                    <span class="font-medium">{{ message }}</span>
-                </div>
-              {% endfor %}
-            </div>
+            {% for category, message in messages %}
+              <div class="p-4 mb-6 rounded-xl border flex items-center gap-2 {% if category == 'success' %} bg-green-50 border-green-200 text-green-700 {% else %} bg-red-50 border-red-200 text-red-700 {% endif %}">
+                  <i class="ph-fill {% if category == 'success' %}ph-check-circle{% else %}ph-warning-circle{% endif %}"></i>
+                  {{ message }}
+              </div>
+            {% endfor %}
           {% endif %}
         {% endwith %}
 
-        <!-- Welcome Section -->
-        <div class="mb-8">
-            <div class="flex items-center gap-3 mb-2">
-                <div class="w-10 h-10 bg-brand-orange rounded-lg flex items-center justify-center text-white">
-                    <i class="ph ph-hand-waving text-lg"></i>
-                </div>
-                <h1 class="text-2xl font-bold text-slate-800">Welcome back, {{ user.full_name.split(' ')[0] }}</h1>
-            </div>
-            <p class="text-slate-600">Track your learning progress and continue your journey</p>
-        </div>
-
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <!-- Global Rank -->
-            <div class="stat-card p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <p class="text-sm font-medium text-slate-500 mb-1">Global Rank</p>
-                        <h3 class="text-3xl font-bold text-brand-blue">#{{ rank }}</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% if courses|length == 0 %}
+                <div class="col-span-full py-12 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                        <i class="ph-bold ph-books text-3xl"></i>
                     </div>
-                    <div class="w-14 h-14 bg-orange-50 rounded-full flex items-center justify-center text-2xl text-brand-orange">
-                        <i class="ph ph-trophy"></i>
-                    </div>
-                </div>
-                <p class="text-xs text-slate-500">Based on total XP earned</p>
-            </div>
-
-            <!-- Current Badge -->
-            <div class="stat-card p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <p class="text-sm font-medium text-slate-500 mb-1">Current Badge</p>
-                        <h3 class="text-2xl font-bold text-brand-blue">{{ stats.current_badge }}</h3>
-                    </div>
-                    <div class="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center text-2xl text-brand-blue">
-                        <i class="ph ph-medal"></i>
-                    </div>
-                </div>
-                <p class="text-xs text-slate-500">Your achievement level</p>
-            </div>
-
-            <!-- Total XP -->
-            <div class="stat-card p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-slate-500 mb-1">Total XP</p>
-                        <h3 class="text-3xl font-bold text-slate-800">{{ stats.points }} XP</h3>
-                    </div>
-                    <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-2xl text-slate-600">
-                        <i class="ph ph-rocket-launch"></i>
-                    </div>
-                </div>
-                <div class="progress-bar mt-2">
-                    <div class="progress-fill" style="width: 50%"></div>
-                </div>
-                <p class="text-xs text-slate-500 mt-2">50% to next milestone</p>
-            </div>
-        </div>
-
-        <!-- My Active Courses -->
-        <div class="mb-8">
-            <div class="flex items-center justify-between mb-6">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-brand-orange rounded-lg flex items-center justify-center text-white">
-                        <i class="ph ph-book-open text-lg"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-bold text-slate-800">My Active Courses</h2>
-                        <p class="text-sm text-slate-500">{{ my_courses|length }} courses enrolled</p>
-                    </div>
-                </div>
-            </div>
-
-            {% if my_courses|length == 0 %}
-                <div class="bg-white rounded-xl p-8 text-center border-2 border-dashed border-slate-300">
-                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-3xl text-slate-400 mx-auto mb-4">
-                        <i class="ph ph-books"></i>
-                    </div>
-                    <h3 class="text-lg font-semibold text-slate-700 mb-2">No courses yet</h3>
-                    <p class="text-slate-500 mb-4">Browse available courses below to start learning</p>
-                </div>
-            {% else %}
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {% for item in my_courses %}
-                    <div class="course-card p-5">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center text-brand-orange">
-                                    <i class="ph ph-book text-lg"></i>
-                                </div>
-                                <span class="px-3 py-1 bg-orange-50 text-orange-700 text-xs font-semibold rounded-full">
-                                    {{ item.courses.category }}
-                                </span>
-                            </div>
-                            <button onclick="openDropModal('{{ item.course_id }}', '{{ item.courses.title }}')"
-                                    class="text-slate-400 hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"
-                                    title="Drop Course">
-                                <i class="ph ph-trash-simple text-lg"></i>
-                            </button>
-                        </div>
-                        
-                        <h3 class="font-bold text-slate-800 mb-3 text-lg">{{ item.courses.title }}</h3>
-                        
-                        <div class="flex items-center justify-between mt-6">
-                            <a href="/student/course/{{ item.course_id }}" 
-                               class="btn-primary text-sm flex items-center gap-2">
-                                Continue
-                                <i class="ph ph-arrow-right"></i>
-                            </a>
-                            <span class="text-xs text-slate-500">
-                                <i class="ph ph-clock mr-1"></i>
-                                Last active
-                            </span>
-                        </div>
-                    </div>
-                    {% endfor %}
+                    <p class="text-slate-500 font-medium">You haven't joined any courses yet.</p>
+                    <a href="/student/join_course" class="text-indigo-600 font-bold mt-2 hover:underline">Find a class to join</a>
                 </div>
             {% endif %}
-        </div>
 
-        <!-- Explore Courses -->
-        <div>
-            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
-                <div class="flex items-center gap-3 mb-4 md:mb-0">
-                    <div class="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center text-white">
-                        <i class="ph ph-compass text-lg"></i>
+            {% for course in courses %}
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition group flex flex-col justify-between h-full">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wide rounded-full">{{ course.category }}</span>
+                        <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 transition">
+                            <i class="ph-fill ph-caret-right text-lg"></i>
+                        </div>
                     </div>
-                    <div>
-                        <h2 class="text-xl font-bold text-slate-800">Explore Courses</h2>
-                        <p class="text-sm text-slate-500">{{ all_courses|length }} courses available</p>
-                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2 leading-tight">{{ course.title }}</h3>
+                    <p class="text-slate-500 text-sm line-clamp-2 mb-4">{{ course.description }}</p>
                 </div>
                 
-                <form action="/student/dashboard" method="GET" class="flex gap-2 w-full md:w-auto">
-                    <div class="relative flex-1 md:w-64">
-                        <input type="text" 
-                               name="q" 
-                               value="{{ search_query }}" 
-                               placeholder="Search courses..." 
-                               class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-transparent outline-none">
-                        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                    </div>
-                    <button type="submit" class="px-4 py-2.5 bg-brand-blue text-white rounded-lg hover:bg-blue-800 transition-colors">
-                        <i class="ph ph-arrow-right"></i>
+                <div class="pt-4 border-t border-slate-50 mt-auto flex gap-3">
+                    <a href="/student/course/{{ course.id }}" class="flex-1 py-2 text-center bg-indigo-50 text-indigo-700 font-bold rounded-lg hover:bg-indigo-600 hover:text-white transition">
+                        Enter Class
+                    </a>
+                    <button onclick="openDropModal('{{ course.id }}', '{{ course.title }}')" class="px-3 py-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Drop Course">
+                        <i class="ph-bold ph-trash text-lg"></i>
                     </button>
-                </form>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {% for course in all_courses %}
-                <div class="course-card p-4">
-                    <div class="mb-4">
-                        <div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500 mb-3">
-                            <i class="ph ph-book-bookmark text-xl"></i>
-                        </div>
-                        <h3 class="font-semibold text-slate-800 text-sm mb-1 truncate">{{ course.title }}</h3>
-                        <p class="text-xs text-slate-500 mb-3">{{ course.category }}</p>
-                        <button onclick="openJoinModal('{{ course.id }}', '{{ course.title }}')"
-                                class="text-sm font-semibold text-brand-orange flex items-center gap-1 hover:gap-2 transition-all">
-                            Join Class
-                            <i class="ph ph-arrow-right text-xs"></i>
-                        </button>
-                    </div>
                 </div>
-                {% endfor %}
             </div>
+            {% endfor %}
         </div>
+
     </main>
 
-    <!-- Join Modal -->
-    <div id="joinModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4">
-            <div class="p-6 text-center">
-                <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center text-2xl text-brand-orange mx-auto mb-4">
-                    <i class="ph ph-user-plus"></i>
-                </div>
-                <h3 class="text-lg font-bold text-slate-800 mb-2">Join this Class?</h3>
-                <p class="text-slate-600 text-sm mb-4">You are about to enroll in:</p>
-                <div class="bg-slate-50 rounded-lg p-4 mb-6">
-                    <p id="modalCourseTitle" class="font-bold text-slate-800"></p>
-                </div>
-                <div class="flex gap-3">
-                    <button onclick="closeJoinModal()" 
-                            class="flex-1 py-3 bg-slate-100 text-slate-600 font-semibold rounded-lg hover:bg-slate-200 transition-colors">
-                        Cancel
-                    </button>
-                    <a href="#" id="confirmJoinBtn"
-                       class="flex-1 py-3 bg-brand-blue text-white font-semibold rounded-lg hover:bg-blue-800 transition-colors">
-                        Join
-                    </a>
-                </div>
+    <div id="dropModal" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all p-6 text-center">
+            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="ph-bold ph-warning text-3xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Drop this Class?</h3>
+            <p class="text-slate-500 text-sm mb-4">Are you sure you want to leave <strong id="dropCourseTitle" class="text-slate-800"></strong>?</p>
+            <div class="bg-yellow-50 text-yellow-800 text-xs p-3 rounded-lg mb-6 border border-yellow-100">
+                Warning: Your grades for this course will be lost forever.
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="closeDropModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition">
+                    Cancel
+                </button>
+                <a href="#" id="confirmDropBtn" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition shadow-lg shadow-red-200">
+                    Yes, Drop It
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Drop Modal -->
-    <div id="dropModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4">
-            <div class="p-6 text-center">
-                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-2xl text-red-600 mx-auto mb-4">
-                    <i class="ph ph-warning"></i>
-                </div>
-                <h3 class="text-lg font-bold text-slate-800 mb-2">Drop this Class?</h3>
-                <p class="text-slate-600 text-sm mb-4">Are you sure you want to leave:</p>
-                <div class="bg-red-50 rounded-lg p-4 mb-6 border border-red-100">
-                    <p id="dropCourseTitle" class="font-bold text-slate-800"></p>
-                </div>
-                <div class="bg-yellow-50 rounded-lg p-3 mb-6 border border-yellow-200">
-                    <p class="text-xs text-yellow-800 font-medium">
-                        <i class="ph ph-warning-circle mr-1"></i>
-                        Your progress will be lost
-                    </p>
-                </div>
-                <div class="flex gap-3">
-                    <button onclick="closeDropModal()" 
-                            class="flex-1 py-3 bg-slate-100 text-slate-600 font-semibold rounded-lg hover:bg-slate-200 transition-colors">
-                        Cancel
-                    </button>
-                    <a href="#" id="confirmDropBtn"
-                       class="flex-1 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors">
-                        Drop
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+    </script>
 
 </body>
 </html>

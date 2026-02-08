@@ -1,74 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Start Quiz | {{ quiz.title }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
-<body class="bg-slate-50 min-h-screen flex items-center justify-center p-6">
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 font-sans">
 
     <div class="bg-white max-w-lg w-full rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
         
         <div class="bg-indigo-900 p-8 text-center relative overflow-hidden">
             <div class="relative z-10">
-                <h1 class="text-2xl font-bold text-white mb-2">{{ quiz.title }}</h1>
-                <span class="bg-indigo-800 text-indigo-100 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+                <a href="/student/course/{{ quiz.course_id }}" class="absolute top-0 left-0 text-indigo-200 hover:text-white transition">
+                    <i class="ph-bold ph-arrow-left text-xl"></i>
+                </a>
+                <h1 class="text-2xl font-bold text-white mb-2 mt-2">{{ quiz.title }}</h1>
+                <span class="bg-indigo-800 text-indigo-100 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border border-indigo-700">
                     Assessment
                 </span>
             </div>
-            <i class="ph-duotone ph-exam text-9xl text-indigo-800 absolute -bottom-10 -right-10 opacity-50"></i>
+            <i class="ph-duotone ph-exam text-9xl text-indigo-950 absolute -bottom-4 -right-4 opacity-50 rotate-12"></i>
         </div>
 
-        <div class="p-8 space-y-6">
+        <div class="p-6 md:p-8 space-y-6">
             
-            {% if not can_take %}
-                <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3">
-                    <i class="ph-fill ph-prohibit text-red-500 text-2xl shrink-0"></i>
-                    <div>
-                        <h3 class="font-bold text-red-800">Access Denied</h3>
-                        <p class="text-sm text-red-700">{{ message }}</p>
-                    </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                    <i class="ph-bold ph-clock text-indigo-600 text-xl mb-1"></i>
+                    <p class="text-xs text-slate-500 uppercase font-bold">Duration</p>
+                    <p class="font-bold text-slate-800">{{ quiz.duration_minutes }} Mins</p>
                 </div>
-                <a href="/student/dashboard" class="block w-full py-3 bg-slate-100 text-slate-600 font-bold text-center rounded-xl hover:bg-slate-200 transition">
-                    Return to Dashboard
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                    <i class="ph-bold ph-question text-indigo-600 text-xl mb-1"></i>
+                    <p class="text-xs text-slate-500 uppercase font-bold">Questions</p>
+                    <p class="font-bold text-slate-800">{{ question_count }}</p>
+                </div>
+            </div>
+
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <h3 class="font-bold text-yellow-900 mb-2 flex items-center gap-2 text-sm md:text-base">
+                    <i class="ph-fill ph-warning-circle text-yellow-600"></i> Important Rules
+                </h3>
+                <ul class="space-y-2 text-xs md:text-sm text-yellow-800">
+                    <li class="flex items-start gap-2">
+                        <span class="mt-0.5">•</span>
+                        <span><strong>Do not switch tabs.</strong> Leaving the page triggers a violation.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="mt-0.5">•</span>
+                        <span>3 violations will <strong>auto-submit</strong> your quiz.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="mt-0.5">•</span>
+                        <span>Once started, the timer cannot be paused.</span>
+                    </li>
+                </ul>
+            </div>
+
+            {% if not can_take %}
+                <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                    <p class="text-red-800 font-bold mb-1">Limit Reached</p>
+                    <p class="text-xs text-red-600">You have used all {{ quiz.max_attempts }} attempts for this quiz.</p>
+                </div>
+                <a href="/student/course/{{ quiz.course_id }}" class="block w-full py-4 bg-slate-100 text-slate-500 font-bold text-center rounded-xl hover:bg-slate-200 transition">
+                    Back to Course
                 </a>
             {% else %}
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
-                        <i class="ph-duotone ph-clock text-3xl text-indigo-600 mb-2"></i>
-                        <p class="text-xs text-slate-500 uppercase font-bold">Duration</p>
-                        <p class="font-bold text-slate-800">{{ quiz.duration_minutes }} Minutes</p>
-                    </div>
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
-                        <i class="ph-duotone ph-arrows-clockwise text-3xl text-indigo-600 mb-2"></i>
-                        <p class="text-xs text-slate-500 uppercase font-bold">Attempts</p>
-                        <p class="font-bold text-slate-800">{{ attempts_used }} / {{ quiz.max_attempts }} Used</p>
-                    </div>
-                </div>
-
-                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-5">
-                    <h3 class="font-bold text-yellow-800 mb-3 flex items-center gap-2">
-                        <i class="ph-bold ph-warning-circle"></i> Anti-Cheating Rules
-                    </h3>
-                    <ul class="space-y-2 text-sm text-yellow-800">
-                        <li class="flex items-start gap-2">
-                            <i class="ph-fill ph-eye text-yellow-600 mt-1"></i>
-                            <span><strong>Do not switch tabs.</strong> Leaving this page will trigger a violation warning.</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <i class="ph-fill ph-prohibit text-yellow-600 mt-1"></i>
-                            <span>If you switch tabs <strong>3 times</strong>, your quiz will automatically submit with a score of 0.</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <i class="ph-fill ph-lock-key text-yellow-600 mt-1"></i>
-                            <span>Right-click and copy/paste are disabled.</span>
-                        </li>
-                    </ul>
-                </div>
-
-                <a href="/student/quiz_start/{{ quiz.id }}" class="block w-full py-4 bg-indigo-600 text-white font-bold text-center rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 text-lg">
-                    I Understand, Start Quiz
-                </a>
+                <form action="/student/take_quiz/{{ quiz.id }}" method="GET">
+                    <button type="submit" class="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 text-lg flex items-center justify-center gap-2">
+                        Start Quiz <i class="ph-bold ph-arrow-right"></i>
+                    </button>
+                </form>
             {% endif %}
             
         </div>

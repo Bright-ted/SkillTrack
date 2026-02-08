@@ -1,81 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Result: {{ result['quizzes']['title'] }}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result: {{ result.quizzes.title }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
-<body class="bg-slate-50 min-h-screen pb-20">
+<body class="bg-slate-50 min-h-screen pb-20 font-sans">
 
-    <div class="bg-white border-b border-slate-200 sticky top-0 z-30 px-6 py-4 shadow-sm flex justify-between items-center">
-        <div class="flex items-center gap-4">
-            <a href="/student/grades" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+    <div class="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 py-3 md:px-6 md:py-4 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <a href="/student/grades" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition shrink-0">
                 <i class="ph-bold ph-arrow-left"></i>
             </a>
-            <div>
-                <h1 class="font-bold text-slate-800">{{ result['quizzes']['title'] }}</h1>
-                <p class="text-xs text-slate-500">Course: {{ result['quizzes']['courses']['title'] }}</p>
+            <div class="min-w-0">
+                <h1 class="font-bold text-slate-800 text-lg md:text-xl truncate">{{ result.quizzes.title }}</h1>
+                <p class="text-xs text-slate-500 truncate">Course: {{ result.quizzes.courses.title }}</p>
             </div>
         </div>
         
-        <div class="text-right">
-            <span class="block text-xs text-slate-400 font-bold uppercase">Final Score</span>
-            <span class="text-3xl font-black {% if result['score'] >= 50 %} text-green-600 {% else %} text-red-600 {% endif %}">
-                {{ result['score'] }}%
-            </span>
+        <div class="flex items-center justify-between w-full md:w-auto gap-4 bg-slate-50 md:bg-transparent p-2 md:p-0 rounded-lg">
+             <div class="text-right flex-1 md:flex-none">
+                <span class="block text-[10px] md:text-xs text-slate-400 font-bold uppercase">Final Score</span>
+                <span class="text-xl md:text-2xl font-black {% if result.score >= 50 %} text-green-600 {% else %} text-red-600 {% endif %}">
+                    {{ result.score }}%
+                </span>
+            </div>
         </div>
     </div>
 
-    <div class="max-w-3xl mx-auto mt-8 px-6 space-y-6">
+    <div class="max-w-3xl mx-auto p-4 md:p-8 space-y-6">
 
-        {% if result['feedback'] %}
-        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-6 relative overflow-hidden">
-            <div class="absolute top-0 right-0 p-4 opacity-10">
-                <i class="ph-fill ph-quotes text-6xl text-indigo-600"></i>
-            </div>
-            <div class="relative z-10">
-                <h3 class="text-indigo-900 font-bold flex items-center gap-2 mb-2">
-                    <i class="ph-fill ph-chats-circle"></i> Instructor Feedback
-                </h3>
-                <p class="text-indigo-800 leading-relaxed">
-                    "{{ result['feedback'] }}"
-                </p>
-            </div>
+        {% if result.feedback %}
+        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 md:p-6 shadow-sm">
+            <h3 class="font-bold text-indigo-800 mb-2 flex items-center gap-2">
+                <i class="ph-fill ph-chat-circle-text text-xl"></i> Instructor Feedback
+            </h3>
+            <p class="text-indigo-900 text-sm md:text-base leading-relaxed bg-white p-4 rounded-lg border border-indigo-100">
+                "{{ result.feedback }}"
+            </p>
         </div>
         {% endif %}
-        {% for item in review %}
-        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+
+        {% for item in answers %}
+        <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+            <div class="absolute left-0 top-0 bottom-0 w-1 {% if item.is_correct %} bg-green-500 {% else %} bg-red-500 {% endif %}"></div>
             
-            <div class="flex gap-4 mb-4">
-                <span class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm 
-                    {% if item.is_correct %} bg-green-100 text-green-700 {% else %} bg-red-100 text-red-700 {% endif %}">
-                    {% if item.is_correct %} <i class="ph-bold ph-check"></i> {% else %} <i class="ph-bold ph-x"></i> {% endif %}
-                </span>
-                <h3 class="font-bold text-slate-800 text-lg">{{ item.question }}</h3>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                <div class="p-3 rounded-lg border {% if item.is_correct %} bg-green-50 border-green-100 {% else %} bg-red-50 border-red-100 {% endif %}">
-                    <span class="text-xs font-bold uppercase block mb-1 {% if item.is_correct %} text-green-600 {% else %} text-red-600 {% endif %}">
-                        Your Answer
-                    </span>
-                    <p class="font-medium text-slate-800">
-                        {{ item.user_answer }}
-                    </p>
+            <div class="ml-2">
+                <div class="flex justify-between items-start mb-2 gap-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Question {{ loop.index }}</span>
+                    {% if item.is_correct %}
+                        <span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                            <i class="ph-bold ph-check"></i> Correct
+                        </span>
+                    {% else %}
+                        <span class="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                            <i class="ph-bold ph-x"></i> Incorrect
+                        </span>
+                    {% endif %}
                 </div>
-
-                {% if not item.is_correct %}
-                <div class="p-3 rounded-lg border bg-slate-50 border-slate-200">
-                    <span class="text-xs font-bold uppercase block mb-1 text-slate-500">
-                        Correct Answer
-                    </span>
-                    <p class="font-medium text-slate-600">
-                        {{ item.correct_answer }}
-                    </p>
-                </div>
-                {% endif %}
                 
+                <h3 class="font-bold text-slate-800 text-base md:text-lg mb-4 leading-relaxed">{{ item.question.question_text }}</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-3 md:p-4 rounded-lg border {% if item.is_correct %} bg-green-50 border-green-100 {% else %} bg-red-50 border-red-100 {% endif %}">
+                        <span class="text-[10px] font-bold uppercase block mb-1 opacity-60">Your Answer</span>
+                        <p class="font-medium text-slate-800 text-sm md:text-base break-words">
+                            {{ item.user_answer }}
+                        </p>
+                    </div>
+
+                    {% if not item.is_correct %}
+                    <div class="p-3 md:p-4 rounded-lg border bg-slate-50 border-slate-200">
+                        <span class="text-[10px] font-bold uppercase block mb-1 text-slate-400">Correct Answer</span>
+                        <p class="font-medium text-slate-600 text-sm md:text-base break-words">
+                            {{ item.question.correct_answer }}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
         {% endfor %}

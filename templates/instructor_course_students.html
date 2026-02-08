@@ -1,61 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Students: {{ course.title }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
-<body class="bg-slate-50 min-h-screen flex">
+<body class="bg-slate-50 min-h-screen font-sans">
 
-    <aside class="w-64 bg-white border-r border-slate-200 min-h-screen p-6 fixed h-full">
-        <div class="flex items-center gap-3 mb-8">
-            <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white"><i class="ph-bold ph-chalkboard-teacher"></i></div>
+    <div class="md:hidden bg-white border-b border-slate-200 p-4 flex justify-between items-center sticky top-0 z-30">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white">
+                <i class="ph-bold ph-chalkboard-teacher text-lg"></i>
+            </div>
             <span class="font-bold text-lg text-slate-800">SkillTrack</span>
         </div>
-        <a href="/instructor/students" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-purple-700 font-bold block mb-2"><i class="ph-bold ph-arrow-left"></i> Back to Courses</a>
+        <button onclick="toggleSidebar()" class="text-slate-600 focus:outline-none">
+            <i class="ph-bold ph-list text-2xl"></i>
+        </button>
+    </div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col justify-between">
+        <div>
+            <div class="p-6 hidden md:flex items-center gap-3 border-b border-slate-100">
+                <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white">
+                    <i class="ph-bold ph-chalkboard-teacher text-lg"></i>
+                </div>
+                <span class="font-bold text-lg text-slate-800 tracking-tight">SkillTrack Pro</span>
+            </div>
+
+            <div class="md:hidden p-4 flex justify-end">
+                <button onclick="toggleSidebar()" class="text-slate-500">
+                    <i class="ph-bold ph-x text-2xl"></i>
+                </button>
+            </div>
+
+            <nav class="mt-2 md:mt-6 px-4 space-y-2">
+                <a href="/instructor/students" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-purple-700 font-bold block mb-2 transition">
+                    <i class="ph-bold ph-arrow-left text-xl"></i> Back to Courses
+                </a>
+                
+                <div class="px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Current Course
+                </div>
+                
+                <div class="px-4 py-3 bg-purple-50 text-purple-700 rounded-xl font-bold border border-purple-100">
+                    <span class="line-clamp-2 text-sm">{{ course.title }}</span>
+                </div>
+            </nav>
+        </div>
+
+        <div class="p-4 border-t border-slate-100">
+            <a href="/logout" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl font-bold transition">
+                <i class="ph-bold ph-sign-out text-xl"></i>
+                <span>Log Out</span>
+            </a>
+        </div>
     </aside>
 
-    <main class="ml-64 flex-1 p-8">
-        <div class="flex justify-between items-end mb-6">
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden glass"></div>
+
+    <main class="w-full md:ml-64 p-4 md:p-8 transition-all duration-300">
+        
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
             <div>
                 <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Class List</p>
-                <h1 class="text-3xl font-bold text-slate-800">{{ course.title }}</h1>
-                <p class="text-slate-500 mt-1">{{ students|length }} Students Enrolled</p>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-800 mt-1">{{ course.title }}</h1>
+            </div>
+            
+            <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex items-center gap-2">
+                <span class="text-slate-500 text-sm font-bold">Total Students:</span>
+                <span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-sm font-bold">{{ students|length }}</span>
             </div>
         </div>
 
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <table class="w-full text-left">
-                <thead class="bg-slate-50 text-xs font-bold text-slate-400 uppercase border-b">
-                    <tr>
-                        <th class="px-6 py-4">Student Name</th>
-                        <th class="px-6 py-4">Student ID</th>
-                        <th class="px-6 py-4">Email</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for s in students %}
-                    <tr class="hover:bg-slate-50">
-                        <td class="px-6 py-4 font-bold text-slate-700 flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold">
-                                {{ s.users.full_name[0] }}
-                            </div>
-                            {{ s.users.full_name }}
-                        </td>
-                        <td class="px-6 py-4 font-mono text-sm text-slate-600">{{ s.school_id }}</td>
-                        <td class="px-6 py-4 text-slate-500">{{ s.users.email }}</td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="3" class="px-6 py-12 text-center text-slate-400">
-                            <i class="ph-duotone ph-ghost text-3xl mb-2"></i>
-                            <p>No students enrolled in this class yet.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 text-xs uppercase">
+                        <tr>
+                            <th class="px-6 py-4 font-bold">Student Name</th>
+                            <th class="px-6 py-4 font-bold">Student ID</th>
+                            <th class="px-6 py-4 font-bold">Email</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for s in students %}
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="px-6 py-4 font-bold text-slate-700 flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold border border-purple-200">
+                                    {{ s.users.full_name[0] }}
+                                </div>
+                                {{ s.users.full_name }}
+                            </td>
+                            <td class="px-6 py-4 font-mono text-sm text-slate-600 bg-slate-50/50">
+                                {{ s.school_id }}
+                            </td>
+                            <td class="px-6 py-4 text-slate-500 text-sm">
+                                {{ s.users.email }}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="px-6 py-12 text-center">
+                                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                                    <i class="ph-duotone ph-ghost text-3xl"></i>
+                                </div>
+                                <p class="text-slate-500 font-medium">No students enrolled in this class yet.</p>
+                                <p class="text-xs text-slate-400 mt-1">Students will appear here once they join.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
+
     </main>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+    </script>
+
 </body>
 </html>
