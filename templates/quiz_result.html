@@ -2,88 +2,130 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <title>Quiz Results</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Result: {{ result.quizzes.title }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
-<body class="bg-slate-50 min-h-screen pb-20 font-sans">
+<body class="bg-slate-50 min-h-screen font-sans p-4 md:p-6">
 
-    <div class="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 py-3 md:px-6 md:py-4 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div class="flex items-center gap-3 w-full md:w-auto">
-            <a href="/student/grades" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition shrink-0">
-                <i class="ph-bold ph-arrow-left"></i>
-            </a>
-            <div class="min-w-0">
-                <h1 class="font-bold text-slate-800 text-lg md:text-xl truncate">{{ result.quizzes.title }}</h1>
-                <p class="text-xs text-slate-500 truncate">Course: {{ result.quizzes.courses.title }}</p>
+    <div class="max-w-4xl mx-auto">
+        <!-- Header with Score -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 text-center mb-8">
+            <h1 class="text-xl md:text-2xl font-bold text-slate-800 mb-2">{{ result.quizzes.title }}</h1>
+            <div class="text-4xl md:text-5xl font-black {% if result.score >= 50 %}text-green-600{% else %}text-red-600{% endif %} mb-2">
+                {{ result.score }}%
+            </div>
+            <p class="text-slate-500 mb-4">Final Score</p>
+            
+            {% if result.violation_count > 0 %}
+            <div class="inline-flex items-center gap-2 bg-red-50 text-red-700 px-4 py-2 rounded-lg mb-4">
+                <i class="ph-bold ph-warning-circle"></i>
+                <span class="text-sm font-bold">Tab switches: {{ result.violation_count }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="flex flex-col sm:flex-row gap-3 justify-center mt-6">
+                <a href="/student/dashboard" class="px-6 py-2 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200 transition">
+                    Return to Dashboard
+                </a>
+                <a href="/student/grades" class="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition">
+                    View All Grades
+                </a>
             </div>
         </div>
-        
-        <div class="flex items-center justify-between w-full md:w-auto gap-4 bg-slate-50 md:bg-transparent p-2 md:p-0 rounded-lg">
-             <div class="text-right flex-1 md:flex-none">
-                <span class="block text-[10px] md:text-xs text-slate-400 font-bold uppercase">Final Score</span>
-                <span class="text-xl md:text-2xl font-black {% if result.score >= 50 %} text-green-600 {% else %} text-red-600 {% endif %}">
-                    {{ result.score }}%
-                </span>
-            </div>
-        </div>
-    </div>
 
-    <div class="max-w-3xl mx-auto p-4 md:p-8 space-y-6">
-
-        {% if result.feedback %}
-        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 md:p-6 shadow-sm">
-            <h3 class="font-bold text-indigo-800 mb-2 flex items-center gap-2">
-                <i class="ph-fill ph-chat-circle-text text-xl"></i> Instructor Feedback
+        <!-- Detailed Report -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                <i class="ph-bold ph-clipboard-text text-indigo-600"></i>
+                Detailed Report
             </h3>
-            <p class="text-indigo-900 text-sm md:text-base leading-relaxed bg-white p-4 rounded-lg border border-indigo-100">
-                "{{ result.feedback }}"
-            </p>
+            
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="text-center p-3 bg-slate-50 rounded-lg">
+                    <div class="text-2xl font-bold text-slate-800">{{ report|length }}</div>
+                    <div class="text-xs text-slate-500">Total Questions</div>
+                </div>
+                <div class="text-center p-3 bg-green-50 rounded-lg">
+                    <div class="text-2xl font-bold text-green-600">
+                        {{ report|selectattr('is_correct')|list|length }}
+                    </div>
+                    <div class="text-xs text-green-700">Correct</div>
+                </div>
+                <div class="text-center p-3 bg-red-50 rounded-lg">
+                    <div class="text-2xl font-bold text-red-600">
+                        {{ report|rejectattr('is_correct')|list|length }}
+                    </div>
+                    <div class="text-xs text-red-700">Incorrect</div>
+                </div>
+                <div class="text-center p-3 bg-blue-50 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-600">{{ result.score }}%</div>
+                    <div class="text-xs text-blue-700">Score</div>
+                </div>
+            </div>
+
+            <!-- Questions Review -->
+            <div class="space-y-4">
+                {% for item in report %}
+                <div class="border rounded-xl overflow-hidden {% if item.is_correct %}border-green-200{% else %}border-red-200{% endif %}">
+                    <!-- Question Header -->
+                    <div class="flex items-center justify-between p-4 {% if item.is_correct %}bg-green-50{% else %}bg-red-50{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center {% if item.is_correct %}bg-green-100 text-green-600{% else %}bg-red-100 text-red-600{% endif %}">
+                                {% if item.is_correct %}
+                                <i class="ph-bold ph-check"></i>
+                                {% else %}
+                                <i class="ph-bold ph-x"></i>
+                                {% endif %}
+                            </div>
+                            <span class="font-bold text-slate-800">Question {{ loop.index }}</span>
+                        </div>
+                        <span class="text-sm font-bold {% if item.is_correct %}text-green-700{% else %}text-red-700{% endif %}">
+                            {% if item.is_correct %}Correct{% else %}Incorrect{% endif %}
+                        </span>
+                    </div>
+                    
+                    <!-- Question Content -->
+                    <div class="p-4">
+                        <h4 class="font-bold text-slate-800 mb-3 text-lg">{{ item.question }}</h4>
+                        
+                        <!-- User's Answer -->
+                        <div class="mb-3">
+                            <p class="text-sm font-bold text-slate-500 mb-1">Your Answer:</p>
+                            <div class="p-3 rounded-lg {% if item.is_correct %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ item.user_answer if item.user_answer else "No answer provided" }}
+                            </div>
+                        </div>
+                        
+                        <!-- Correct Answer (Only show if wrong) -->
+                        {% if not item.is_correct and item.correct_answer %}
+                        <div>
+                            <p class="text-sm font-bold text-slate-500 mb-1">Correct Answer:</p>
+                            <div class="p-3 rounded-lg bg-slate-100 text-slate-800 border border-slate-200">
+                                {{ item.correct_answer }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Feedback Section (if instructor provided) -->
+        {% if result.feedback %}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                <i class="ph-bold ph-chat-text text-indigo-600"></i>
+                Instructor Feedback
+            </h3>
+            <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+                <p class="text-slate-700">{{ result.feedback }}</p>
+            </div>
         </div>
         {% endif %}
-
-        {% for item in answers %}
-        <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
-            <div class="absolute left-0 top-0 bottom-0 w-1 {% if item.is_correct %} bg-green-500 {% else %} bg-red-500 {% endif %}"></div>
-            
-            <div class="ml-2">
-                <div class="flex justify-between items-start mb-2 gap-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Question {{ loop.index }}</span>
-                    {% if item.is_correct %}
-                        <span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                            <i class="ph-bold ph-check"></i> Correct
-                        </span>
-                    {% else %}
-                        <span class="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                            <i class="ph-bold ph-x"></i> Incorrect
-                        </span>
-                    {% endif %}
-                </div>
-                
-                <h3 class="font-bold text-slate-800 text-base md:text-lg mb-4 leading-relaxed">{{ item.question.question_text }}</h3>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="p-3 md:p-4 rounded-lg border {% if item.is_correct %} bg-green-50 border-green-100 {% else %} bg-red-50 border-red-100 {% endif %}">
-                        <span class="text-[10px] font-bold uppercase block mb-1 opacity-60">Your Answer</span>
-                        <p class="font-medium text-slate-800 text-sm md:text-base break-words">
-                            {{ item.user_answer }}
-                        </p>
-                    </div>
-
-                    {% if not item.is_correct %}
-                    <div class="p-3 md:p-4 rounded-lg border bg-slate-50 border-slate-200">
-                        <span class="text-[10px] font-bold uppercase block mb-1 text-slate-400">Correct Answer</span>
-                        <p class="font-medium text-slate-600 text-sm md:text-base break-words">
-                            {{ item.question.correct_answer }}
-                        </p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-
     </div>
 
 </body>

@@ -7,130 +7,94 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans">
+<body class="bg-slate-50 min-h-screen p-4 md:p-6 font-sans">
 
-    <div class="md:hidden bg-white border-b border-slate-200 p-4 flex justify-between items-center sticky top-0 z-30">
-        <div class="flex items-center gap-2">
-            <a href="/instructor/course/{{ quiz.course_id }}" class="text-slate-500 hover:text-slate-800">
-                <i class="ph-bold ph-arrow-left text-xl"></i>
+    <div class="max-w-6xl mx-auto mb-6 md:mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <a href="/instructor/course/{{ quiz.course_id }}" class="text-slate-500 hover:text-slate-800 flex items-center gap-2 mb-2 font-bold text-sm">
+                <i class="ph-bold ph-arrow-left"></i> Back to Course
             </a>
-            <span class="font-bold text-lg text-slate-800 truncate max-w-[200px]">{{ quiz.title }} Results</span>
+            <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Results: {{ quiz.title }}</h1>
+        </div>
+        
+        <div class="w-full md:w-auto bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between md:justify-center gap-6">
+            <div class="text-center">
+                <span class="block text-2xl font-bold text-indigo-600">{{ students|length }}</span>
+                <span class="text-xs text-slate-500 font-bold uppercase">Students</span>
+            </div>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto p-4 md:p-8">
-
-        <div class="hidden md:flex justify-between items-center mb-8">
-            <div>
-                <a href="/instructor/course/{{ quiz.course_id }}" class="text-slate-500 hover:text-slate-800 flex items-center gap-2 mb-2 font-bold text-sm">
-                    <i class="ph-bold ph-arrow-left"></i> Back to Course
-                </a>
-                <h1 class="text-3xl font-bold text-slate-800">Leaderboard: {{ quiz.title }}</h1>
+    <div class="max-w-6xl mx-auto space-y-4">
+        
+        {% if students|length == 0 %}
+            <div class="bg-white rounded-xl p-12 text-center border border-dashed border-slate-300">
+                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                    <i class="ph-bold ph-users text-3xl"></i>
+                </div>
+                <p class="text-slate-500 font-medium">No students have taken this quiz yet.</p>
             </div>
-            <div class="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm">
-                <span class="block text-2xl font-bold text-indigo-600 text-center">{{ students|length }}</span>
-                <span class="text-xs text-slate-500 font-bold uppercase">Total Students</span>
-            </div>
-        </div>
+        {% endif %}
 
+        {% for student_id, student in students.items() %}
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            
+            <div class="bg-slate-50 p-4 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                <div>
+                    <h3 class="font-bold text-lg text-slate-800">{{ student.name }}</h3>
+                    <p class="text-sm text-slate-500">{{ student.email }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold uppercase text-slate-400">Best Score:</span>
+                    <span class="text-lg font-bold {% if student.best_score >= 50 %} text-green-600 {% else %} text-red-600 {% endif %}">
+                        {{ student.best_score }}%
+                    </span>
+                </div>
+            </div>
+
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse min-w-[900px]">
-                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200">
+                <table class="w-full text-left border-collapse min-w-[600px]"> <thead class="bg-white text-slate-500 border-b border-slate-100 text-xs uppercase">
                         <tr>
-                            <th class="px-6 py-4 font-bold w-16">Rank</th>
-                            <th class="px-6 py-4 font-bold">Student</th>
-                            <th class="px-6 py-4 font-bold text-center">Attempts</th>
-                            <th class="px-6 py-4 font-bold text-center">Cheating Flags</th>
-                            <th class="px-6 py-4 font-bold text-right">Best Score</th>
-                            <th class="px-6 py-4 font-bold text-right">Actions</th>
+                            <th class="px-6 py-3 font-bold">Attempt Date</th>
+                            <th class="px-6 py-3 font-bold">Score</th>
+                            <th class="px-6 py-3 font-bold">Status</th>
+                            <th class="px-6 py-3 text-right">Action</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        {% for student in students.values()|sort(attribute='best_score', reverse=True) %}
-                        <tr class="hover:bg-slate-50 transition group">
-                            
-                            <td class="px-6 py-4">
-                                {% if loop.index == 1 %}
-                                    <div class="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center font-bold shadow-sm">1</div>
-                                {% elif loop.index == 2 %}
-                                    <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold shadow-sm">2</div>
-                                {% elif loop.index == 3 %}
-                                    <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold shadow-sm">3</div>
+                    <tbody class="divide-y divide-slate-50">
+                        {% for attempt in student.attempts %}
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                {{ attempt.submitted_at[:16].replace('T', ' ') }}
+                            </td>
+                            <td class="px-6 py-4 font-bold">
+                                {% if attempt.score >= 50 %}
+                                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">{{ attempt.score }}%</span>
                                 {% else %}
-                                    <span class="font-bold text-slate-400 pl-2">#{{ loop.index }}</span>
+                                    <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">{{ attempt.score }}%</span>
                                 {% endif %}
                             </td>
-
-                            <td class="px-6 py-4">
-                                <div>
-                                    <div class="font-bold text-slate-800 text-base">{{ student.name }}</div>
-                                    <div class="text-xs text-slate-500">{{ student.email }}</div>
-                                </div>
-                            </td>
-
-                            <td class="px-6 py-4 text-center">
-                                <span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-xs font-bold">
-                                    {{ student.attempts|length }} / {{ quiz.max_attempts }}
-                                </span>
-                            </td>
-
-                            <td class="px-6 py-4 text-center">
-                                {% set ns = namespace(violations=0) %}
-                                {% for attempt in student.attempts %}
-                                    {% if attempt.violation_count > 0 %}
-                                        {% set ns.violations = ns.violations + attempt.violation_count %}
-                                    {% endif %}
-                                {% endfor %}
-
-                                {% if ns.violations > 0 %}
-                                    <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200">
-                                        <i class="ph-bold ph-warning-circle"></i> {{ ns.violations }} Violations
-                                    </span>
+                            <td class="px-6 py-4 text-slate-500 text-sm">
+                                {% if attempt.feedback %}
+                                    <span class="text-indigo-600 flex items-center gap-1 font-medium"><i class="ph-fill ph-chat-circle-text"></i> Feedback Given</span>
                                 {% else %}
-                                    <span class="inline-flex items-center gap-1 text-green-600 font-bold text-xs opacity-50">
-                                        <i class="ph-bold ph-check-circle"></i> Clean
-                                    </span>
+                                    <span class="text-slate-400">Pending Review</span>
                                 {% endif %}
                             </td>
-
                             <td class="px-6 py-4 text-right">
-                                <div class="flex flex-col items-end">
-                                    <span class="text-lg font-bold 
-                                        {% if student.best_score >= 50 %} text-green-600 
-                                        {% else %} text-red-600 {% endif %}">
-                                        {{ student.best_score }}%
-                                    </span>
-                                    {% if student.best_score >= 50 %}
-                                        <span class="text-[10px] font-bold uppercase text-green-600 bg-green-50 px-2 rounded">Pass</span>
-                                    {% else %}
-                                        <span class="text-[10px] font-bold uppercase text-red-600 bg-red-50 px-2 rounded">Fail</span>
-                                    {% endif %}
-                                </div>
-                            </td>
-
-                            <td class="px-6 py-4 text-right">
-                                <a href="/instructor/grade_attempt/{{ student.attempts[-1].id }}" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-bold hover:bg-indigo-600 hover:text-white transition shadow-sm">
-                                    Details <i class="ph-bold ph-caret-right"></i>
+                                <a href="/instructor/grade_attempt/{{ attempt.id }}" class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-bold text-sm hover:underline">
+                                    Review <i class="ph-bold ph-arrow-right"></i>
                                 </a>
-                            </td>
-
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="6" class="px-6 py-12 text-center border-dashed border-2 border-slate-100 rounded-lg m-4">
-                                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
-                                    <i class="ph-duotone ph-student text-3xl"></i>
-                                </div>
-                                <p class="text-slate-500 font-bold">No students have taken this quiz yet.</p>
-                                <p class="text-xs text-slate-400">Share the quiz link with your students.</p>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+
         </div>
+        {% endfor %}
+
     </div>
 
 </body>

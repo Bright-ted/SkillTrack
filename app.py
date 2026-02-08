@@ -5,13 +5,94 @@ from supabase import create_client, Client
 import json
 import csv
 from io import StringIO
+import datetime
 
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = "skilltrack_secret_key" # Needed for flash messages
+app.secret_key = "skilltrack_secret_key"  # Needed for flash messages
 
-# --- SUPABASE SETUP ---
+# ==========================================
+# CUSTOM JINJA2 FILTERS
+# ==========================================
+
+@app.template_filter('datetime')
+def format_datetime(value, format='%b %d, %Y %I:%M %p'):
+    """Format a datetime string or object."""
+    if not value:
+        return ""
+    
+    # If it's already a datetime object
+    if isinstance(value, datetime.datetime):
+        return value.strftime(format)
+    
+    # If it's a string, try to parse it
+    if isinstance(value, str):
+        try:
+            # Try different datetime formats
+            for fmt in ['%Y-%m-%dT%H:%M:%S.%f%z', 
+                       '%Y-%m-%dT%H:%M:%S%z',
+                       '%Y-%m-%d %H:%M:%S',
+                       '%Y-%m-%d']:
+                try:
+                    dt = datetime.datetime.strptime(value, fmt)
+                    return dt.strftime(format)
+                except ValueError:
+                    continue
+        except Exception:
+            pass
+    
+    # If all else fails, return the original value
+    return str(value)
+
+@app.template_filter('shortdate')
+def format_shortdate(value):
+    """Format date as short string."""
+    return format_datetime(value, '%b %d')
+
+@app.template_filter('timeago')
+def time_ago(value):
+    """Return how long ago something happened."""
+    if not value:
+        return ""
+    
+    # Parse the datetime
+    if isinstance(value, str):
+        try:
+            dt = datetime.datetime.fromisoformat(value.replace('Z', '+00:00'))
+        except:
+            return value
+    elif isinstance(value, datetime.datetime):
+        dt = value
+    else:
+        return str(value)
+    
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if dt.tzinfo:
+        dt = dt.astimezone(datetime.timezone.utc)
+    
+    diff = now - dt
+    
+    if diff.days > 365:
+        years = diff.days // 365
+        return f"{years} year{'s' if years > 1 else ''} ago"
+    elif diff.days > 30:
+        months = diff.days // 30
+        return f"{months} month{'s' if months > 1 else ''} ago"
+    elif diff.days > 0:
+        return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"
+    elif diff.seconds > 3600:
+        hours = diff.seconds // 3600
+        return f"{hours} hour{'s' if hours > 1 else ''} ago"
+    elif diff.seconds > 60:
+        minutes = diff.seconds // 60
+        return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+    else:
+        return "just now"
+
+# ==========================================
+# SUPABASE SETUP
+# ==========================================
 url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
@@ -296,13 +377,27 @@ def edit_quiz(quiz_id):
 
 @app.route('/instructor/delete_quiz/<quiz_id>')
 def delete_quiz(quiz_id):
-    if 'user_id' not in session or session['role'] != 'instructor': return redirect(url_for('role_select'))
+    if 'user_id' not in session or session['role'] != 'instructor': 
+        return redirect(url_for('role_select'))
+    
     try:
+        # 1. Get course_id for redirect
         data = supabase.table("quizzes").select("course_id").eq("id", quiz_id).single().execute()
         course_id = data.data['course_id']
+        
+    
+        # Delete exam_results for this quiz
+        supabase.table("exam_results").delete().eq("quiz_id", quiz_id).execute()
+        
+        # Delete questions for this quiz
+        supabase.table("questions").delete().eq("quiz_id", quiz_id).execute()
+        
+        # Now delete the quiz
         supabase.table("quizzes").delete().eq("id", quiz_id).execute()
+        
         flash("Quiz deleted successfully.", "success")
         return redirect(url_for('course_detail', course_id=course_id))
+        
     except Exception as e:
         flash(f"Error deleting quiz: {str(e)}", "error")
         return redirect(url_for('instructor_courses'))
@@ -467,16 +562,52 @@ def export_csv(course_id):
 # 5. FIXED REPORTS (General View)
 @app.route('/instructor/reports')
 def instructor_reports():
-    if 'user_id' not in session or session['role'] != 'instructor': return redirect(url_for('role_select'))
+    if 'user_id' not in session or session['role'] != 'instructor': 
+        return redirect(url_for('role_select'))
     
-    # UPDATE: Added violation_count and users(full_name) to select
-    results = supabase.table("exam_results")\
-        .select("score, passed, violation_count, users(full_name), quizzes!inner(title, courses!inner(title, instructor_id))")\
-        .eq("quizzes.courses.instructor_id", session['user_id'])\
-        .order("submitted_at", desc=True)\
-        .execute()
+    user_id = session['user_id']
+    
+    try:
+        # SIMPLER QUERY: Get all results for courses taught by this instructor
+        # First, get all course IDs taught by this instructor
+        courses = supabase.table("courses").select("id").eq("instructor_id", user_id).execute()
+        course_ids = [course['id'] for course in courses.data]
         
-    return render_template('instructor_reports.html', results=results.data)
+        # If no courses, return empty
+        if not course_ids:
+            return render_template('instructor_reports.html', reports=[])
+        
+        # Get all quizzes in these courses
+        quizzes = supabase.table("quizzes").select("id, title, course_id").in_("course_id", course_ids).execute()
+        quiz_ids = [quiz['id'] for quiz in quizzes.data]
+        
+        if not quiz_ids:
+            return render_template('instructor_reports.html', reports=[])
+        
+        # Get all exam results for these quizzes
+        results = supabase.table("exam_results")\
+            .select("*, users(full_name), quizzes(title)")\
+            .in_("quiz_id", quiz_ids)\
+            .order("submitted_at", desc=True)\
+            .execute()
+        
+        # Format the data for the template
+        reports = []
+        for r in results.data:
+            reports.append({
+                'student_name': r['users']['full_name'] if r.get('users') else 'Unknown',
+                'quiz_title': r['quizzes']['title'] if r.get('quizzes') else 'Unknown Quiz',
+                'date': r['submitted_at'][:10] if r.get('submitted_at') else '',
+                'score': r.get('score', 0),
+                'violation_count': r.get('violation_count', 0),
+                'passed': r.get('score', 0) >= 50
+            })
+        
+        return render_template('instructor_reports.html', reports=reports)
+        
+    except Exception as e:
+        # For debugging, you can return the error
+        return f"Error loading reports: {str(e)}"
 
 @app.route('/instructor/quiz_results/<quiz_id>')
 def instructor_quiz_results(quiz_id):
@@ -534,26 +665,111 @@ def grade_attempt(result_id):
 
 @app.route('/student/dashboard')
 def student_dashboard():
-    if 'user_id' not in session or session['role'] != 'student': return redirect(url_for('role_select'))
+    if 'user_id' not in session or session['role'] != 'student': 
+        return redirect(url_for('role_select'))
+    
     user_id = session['user_id']
     search_query = request.args.get('q', '')
 
-    user_data = supabase.table("users").select("points, current_badge").eq("id", user_id).single().execute()
-    stats = user_data.data if user_data.data else {"points": 0, "current_badge": "Novice"}
+    # 1. Get user stats with level and badge
+    user_data = supabase.table("users").select("points, current_badge, level").eq("id", user_id).single().execute()
+    stats = user_data.data if user_data.data else {
+        "points": 0, 
+        "current_badge": "Novice", 
+        "level": 1
+    }
 
-    better_players = supabase.table("users").select("id", count="exact").gt("points", stats['points']).execute()
-    rank = better_players.count + 1
+    # 2. Calculate rank (students with more XP)
+    rank_query = supabase.table("users")\
+        .select("id", count="exact")\
+        .gt("points", stats['points'])\
+        .eq("role", "student")\
+        .execute()
+    
+    rank = rank_query.count + 1 if rank_query.count else 1
+    total_students = supabase.table("users").select("id", count="exact").eq("role", "student").execute().count
+    rank_progress = int(((total_students - rank + 1) / total_students) * 100) if total_students > 0 else 0
+    students_ahead = rank - 1
 
-    my_courses_resp = supabase.table("enrollments").select("course_id, courses(title, category, description, id)").eq("student_id", user_id).execute()
+    # 3. Get level progression
+    current_level = stats.get('level', 1)
+    next_level = current_level + 1
+    
+    current_level_data = supabase.table("levels")\
+        .select("xp_required")\
+        .eq("level", current_level)\
+        .single().execute().data
+    
+    next_level_data = supabase.table("levels")\
+        .select("xp_required")\
+        .eq("level", next_level)\
+        .single().execute().data if next_level <= 10 else None
+    
+    current_xp_required = current_level_data.get('xp_required', 0)
+    next_xp_required = next_level_data.get('xp_required', 0) if next_level_data else 0
+    
+    xp_in_current_level = stats['points'] - current_xp_required
+    xp_needed_for_next = next_xp_required - current_xp_required if next_xp_required > 0 else 0
+    level_progress = int((xp_in_current_level / xp_needed_for_next) * 100) if xp_needed_for_next > 0 else 100
+    xp_to_next_level = xp_needed_for_next - xp_in_current_level if xp_needed_for_next > 0 else 0
+
+    # 4. Get XP progress visualization
+    all_levels = supabase.table("levels").select("*").order("level", desc=False).execute().data
+    
+    # 5. Get recent XP earnings
+    recent_xp = supabase.table("xp_transactions")\
+        .select("xp_earned, reason, created_at")\
+        .eq("student_id", user_id)\
+        .order("created_at", desc=True)\
+        .limit(5)\
+        .execute().data
+    
+    # 6. Calculate XP earned this week
+    import datetime
+    week_ago = (datetime.datetime.now() - datetime.timedelta(days=7)).isoformat()
+    xp_this_week_query = supabase.table("xp_transactions")\
+        .select("xp_earned")\
+        .eq("student_id", user_id)\
+        .gte("created_at", week_ago)\
+        .execute()
+    
+    xp_this_week = sum(item['xp_earned'] for item in xp_this_week_query.data) if xp_this_week_query.data else 0
+    
+    # 7. Total XP progress (toward max level)
+    max_level_xp = all_levels[-1]['xp_required'] if all_levels else 4500
+    total_xp_progress = int((stats['points'] / max_level_xp) * 100)
+
+    # 8. Get enrolled courses
+    my_courses_resp = supabase.table("enrollments")\
+        .select("course_id, courses(title, category, description, id)")\
+        .eq("student_id", user_id)\
+        .execute()
     my_courses = my_courses_resp.data
     enrolled_ids = [item['course_id'] for item in my_courses]
 
+    # 9. Get available courses
     query = supabase.table("courses").select("*")
-    if search_query: query = query.ilike("title", f"%{search_query}%")
-    if enrolled_ids: query = query.not_.in_("id", enrolled_ids)
+    if search_query: 
+        query = query.ilike("title", f"%{search_query}%")
+    if enrolled_ids: 
+        query = query.not_.in_("id", enrolled_ids)
     all_courses = query.execute().data
     
-    return render_template('student_dashboard.html', user=session, stats=stats, rank=rank, my_courses=my_courses, all_courses=all_courses, search_query=search_query)
+    return render_template('student_dashboard.html', 
+                         user=session, 
+                         stats=stats,
+                         rank=rank,
+                         rank_progress=rank_progress,
+                         students_ahead=students_ahead,
+                         level_progress=level_progress,
+                         xp_to_next_level=xp_to_next_level,
+                         levels=all_levels,
+                         recent_xp=recent_xp,
+                         xp_this_week=xp_this_week,
+                         total_xp_progress=total_xp_progress,
+                         my_courses=my_courses, 
+                         all_courses=all_courses, 
+                         search_query=search_query)
 
 @app.route('/student/join_course/<course_id>')
 def join_course(course_id):
@@ -615,26 +831,53 @@ def quiz_start(quiz_id):
 
     return render_template('student_quiz_start.html', quiz=quiz, can_take=can_take, message=message, attempts_used=attempts_used)
 
-@app.route('/student/attempt_quiz/<quiz_id>')
-def attempt_quiz(quiz_id):
-    if 'user_id' not in session: return redirect(url_for('role_select'))
-    
-    # Optional: Re-verify eligibility here for security if desired
 
-    quiz = supabase.table("quizzes").select("*").eq("id", quiz_id).single().execute()
-    questions = supabase.table("questions").select("*").eq("quiz_id", quiz_id).order("id").execute().data
-    
-    for q in questions:
-        if q.get('question_type') == 'MCQ':
-            q['content'] = q['question_text']
-            q['options'] = [
-                {'id': 'A', 'content': q['option_a']}, {'id': 'B', 'content': q['option_b']},
-                {'id': 'C', 'content': q['option_c']}, {'id': 'D', 'content': q['option_d']}
+@app.route('/student/take_quiz/<quiz_id>')
+def student_take_quiz(quiz_id):
+    if 'user_id' not in session: return redirect(url_for('role_select'))
+    user_id = session['user_id']
+
+    # 1. Fetch Quiz
+    try:
+        quiz = supabase.table("quizzes").select("*").eq("id", quiz_id).single().execute().data
+    except:
+        return redirect(url_for('student_dashboard'))
+
+    # 2. Check Attempts (Security)
+    try:
+        attempts = supabase.table('exam_results').select('*', count='exact').eq('quiz_id', quiz_id).eq('student_id', user_id).execute()
+        if attempts.count >= int(quiz.get('max_attempts', 1)):
+            flash("Max attempts reached.", "error")
+            return redirect(url_for('student_dashboard'))
+    except:
+        pass
+
+    # 3. Fetch Questions
+    raw_questions = supabase.table("questions").select("*").eq("quiz_id", quiz_id).order("id").execute().data
+
+    # 4. DATA FORMATTING - FIXED: Use question_text column
+    formatted_questions = []
+    for q in raw_questions:
+        q_text = q.get('question_text', 'Question text not found')
+        
+        formatted_q = {
+            'id': str(q['id']),  # Convert to string for JavaScript
+            'text': q_text,
+            'question_type': q.get('question_type', 'MCQ'),
+            'options': []
+        }
+        
+        if formatted_q['question_type'] == 'MCQ':
+            formatted_q['options'] = [
+                {'code': 'A', 'text': q.get('option_a', 'Option A')},
+                {'code': 'B', 'text': q.get('option_b', 'Option B')},
+                {'code': 'C', 'text': q.get('option_c', 'Option C')},
+                {'code': 'D', 'text': q.get('option_d', 'Option D')}
             ]
-        else:
-            q['content'] = q['question_text']
-            q['options'] = []
-    return render_template('take_quiz.html', quiz=quiz.data, questions=questions)
+        
+        formatted_questions.append(formatted_q)
+
+    return render_template('take_quiz.html', quiz=quiz, questions=formatted_questions)
 
 @app.route('/api/save_progress', methods=['POST'])
 def save_progress():
@@ -652,89 +895,215 @@ def save_progress():
 
 @app.route('/student/submit_quiz/<quiz_id>', methods=['POST'])
 def submit_quiz(quiz_id):
-    if 'user_id' not in session: return redirect(url_for('role_select'))
+    if 'user_id' not in session: 
+        return redirect(url_for('role_select'))
+    
     user_id = session['user_id']
-    
-    raw_answers = request.form.get('final_answers')
-    violation_count = request.form.get('violation_count', 0) # <--- CAPTURE VIOLATIONS
-    
-    if not raw_answers: return redirect(url_for('student_dashboard'))
-    student_answers = json.loads(raw_answers)
 
+    # 1. Get violation count from form
+    violation_count = int(request.form.get('violation_count', 0))
+    
+    # 2. Get Answers from Form
+    raw_answers = request.form.get('final_answers', '{}')
+    try:
+        answers = json.loads(raw_answers)
+    except:
+        answers = {}
+
+    # 3. Grade the Quiz
     questions = supabase.table("questions").select("*").eq("quiz_id", quiz_id).execute().data
-    score, correct_count = 0, 0
+    correct_count = 0
+    total_questions = len(questions)
 
     for q in questions:
-        ans = student_answers.get(str(q['id']), "").strip()
-        is_correct = False
-        if q['question_type'] == 'MCQ' and ans == q['correct_option']: is_correct = True
-        elif q['question_type'] == 'FILL_BLANK' and ans.lower() == q['correct_option'].lower(): is_correct = True
-        elif q['question_type'] == 'THEORY':
-             keywords = q.get('keywords', '').split(',')
-             if any(k.strip().lower() in ans.lower() for k in keywords if k): is_correct = True
+        q_id = str(q['id'])
+        user_ans = answers.get(q_id)
         
-        if is_correct:
-            score += 1
-            correct_count += 1
+        # Get correct answer based on question type
+        correct_ans = q.get('correct_option', '')
+        
+        if q.get('question_type') == 'MCQ':
+            if user_ans and str(user_ans).strip().upper() == str(correct_ans).strip().upper():
+                correct_count += 1
+                
+        elif q.get('question_type') == 'FILL_BLANK':
+            if user_ans and str(user_ans).strip().lower() == str(correct_ans).strip().lower():
+                correct_count += 1
+                
+        elif q.get('question_type') == 'THEORY':
+            keywords = [k.strip().lower() for k in q.get('keywords', '').split(',') if k.strip()]
+            user_text = str(user_ans).lower() if user_ans else ''
+            if any(keyword in user_text for keyword in keywords):
+                correct_count += 1
 
-    total_questions = len(questions)
-    final_score = round((score / total_questions) * 100) if total_questions > 0 else 0
-    is_passed = True if final_score >= 50 else False
+    # Calculate percentage score
+    final_score_percent = int((correct_count / total_questions * 100)) if total_questions > 0 else 0
 
-    result = supabase.table("exam_results").insert({
-        "student_id": user_id, 
-        "quiz_id": quiz_id, 
-        "score": final_score,         
-        "total_score": total_questions, 
-        "correct_count": correct_count, 
-        "answers": student_answers,
-        "passed": is_passed,
-        "violation_count": violation_count # <--- SAVE TO DATABASE
-    }).execute()
+    # 4. Save to Database
+    data = {
+        "student_id": user_id,
+        "quiz_id": quiz_id,
+        "score": final_score_percent,
+        "correct_count": correct_count,
+        "total_questions": total_questions,
+        "violation_count": violation_count,
+        "answers": json.dumps(answers),
+        "passed": final_score_percent >= 50,
+        "submitted_at": "now()"
+    }
     
-    curr = supabase.table("users").select("points").eq("id", user_id).single().execute().data
-    points_earned = final_score + (10 if is_passed else 0)
-    supabase.table("users").update({"points": (curr.get('points',0) + points_earned)}).eq("id", user_id).execute()
+    try:
+        result = supabase.table("exam_results").insert(data).execute()
+        new_result_id = result.data[0]['id']
+        
+        # 5. AWARD XP BASED ON PERFORMANCE
+        award_student_xp(user_id, final_score_percent, quiz_id)
+        
+        return redirect(url_for('student_quiz_result', result_id=new_result_id))
+        
+    except Exception as e:
+        flash(f"Error submitting quiz: {str(e)}", "error")
+        return redirect(url_for('student_dashboard'))
 
-    return redirect(url_for('quiz_result', result_id=result.data[0]['id']))
+
+def award_student_xp(user_id, score, quiz_id):
+    """Award XP to student based on quiz performance"""
+    try:
+        # Get quiz difficulty (could be based on number of questions or course level)
+        quiz_data = supabase.table("quizzes").select("course_id").eq("id", quiz_id).single().execute()
+        course_data = supabase.table("courses").select("category").eq("id", quiz_data.data['course_id']).single().execute()
+        
+        # Determine difficulty multiplier
+        difficulty_map = {
+            "Advanced": 3,
+            "Intermediate": 2,
+            "Computer Science": 2,
+            "Mathematics": 2,
+            "Engineering": 2,
+            "Business": 1,
+            "General": 1
+        }
+        
+        difficulty = difficulty_map.get(course_data.data.get('category', 'General'), 1)
+        
+        # Calculate XP earned
+        base_xp = score  # 1 XP per percentage point
+        
+        # Bonus for high scores
+        if score >= 90:
+            bonus = 50
+        elif score >= 80:
+            bonus = 30
+        elif score >= 70:
+            bonus = 20
+        elif score >= 60:
+            bonus = 10
+        else:
+            bonus = 5
+        
+        total_xp = (base_xp * difficulty) + bonus
+        
+        # Get current XP
+        user_data = supabase.table("users").select("points, level, current_badge").eq("id", user_id).single().execute()
+        current_xp = user_data.data.get('points', 0)
+        new_xp = current_xp + total_xp
+        
+        # Determine new level and badge
+        level_data = supabase.table("levels").select("*").lte("xp_required", new_xp).order("level", desc=True).limit(1).single().execute()
+        
+        # Update user XP, level, and badge
+        supabase.table("users").update({
+            "points": new_xp,
+            "level": level_data.data['level'],
+            "current_badge": level_data.data['badge_name']
+        }).eq("id", user_id).execute()
+        
+        # Log XP transaction (optional)
+        supabase.table("xp_transactions").insert({
+            "student_id": user_id,
+            "quiz_id": quiz_id,
+            "xp_earned": total_xp,
+            "reason": f"Quiz completed: Score {score}%",
+            "created_at": "now()"
+        }).execute()
+        
+    except Exception as e:
+        print(f"Error awarding XP: {str(e)}")
 
 @app.route('/student/quiz_result/<result_id>')
-def quiz_result(result_id):
-    if 'user_id' not in session: return redirect(url_for('role_select'))
+def student_quiz_result(result_id):
+    if 'user_id' not in session: 
+        return redirect(url_for('role_select'))
     
-    res = supabase.table("exam_results").select("*, quizzes(id, title, courses(title))").eq("id", result_id).single().execute()
-    result = res.data
-    questions = supabase.table("questions").select("*").eq("quiz_id", result['quizzes']['id']).execute().data
-    
-    review_data = []
-    saved_answers = result.get('answers', {}) or {}
-    
-    for q in questions:
-        q_text = q.get('question_text', "Question text missing")
-        user_val = saved_answers.get(str(q['id']), "")
-        is_correct, user_disp, corr_disp = False, "Skipped", "Unknown"
+    try:
+        # Fetch result with quiz and course info
+        result_data = supabase.table('exam_results')\
+            .select('*, quizzes!inner(title, course_id, courses!inner(title))')\
+            .eq('id', result_id)\
+            .single()\
+            .execute()
+        result = result_data.data
         
-        if q['question_type'] == 'MCQ':
-            opt_map = {'A': q.get('option_a'), 'B': q.get('option_b'), 'C': q.get('option_c'), 'D': q.get('option_d')}
-            user_disp = opt_map.get(user_val, "Skipped")
-            corr_disp = opt_map.get(q.get('correct_option'), "Unknown")
-            is_correct = (user_val == q.get('correct_option'))
-        elif q['question_type'] == 'FILL_BLANK':
-            user_disp = user_val if user_val else "Skipped"
-            corr_disp = q.get('correct_option')
-            is_correct = (str(user_val).lower() == str(q.get('correct_option')).lower())
-        elif q['question_type'] == 'THEORY':
-            user_disp = user_val if user_val else "Skipped"
-            keywords = q.get('keywords', '').split(',')
-            if user_val and any(k.strip().lower() in str(user_val).lower() for k in keywords if k): is_correct = True
-            corr_disp = f"Must contain: {q.get('keywords')}"
-
-        review_data.append({
-            "question": q_text, "user_answer": user_disp, "correct_answer": corr_disp,
-            "is_correct": is_correct, "type": q['question_type']
-        })
-
-    return render_template('quiz_result.html', result=result, review=review_data)
+        # Parse answers JSON
+        answers_json = result.get('answers', '{}')
+        if isinstance(answers_json, str):
+            try:
+                answers = json.loads(answers_json)
+            except:
+                answers = {}
+        else:
+            answers = answers_json
+        
+        # Fetch all questions for this quiz
+        questions = supabase.table('questions')\
+            .select('*')\
+            .eq('quiz_id', result['quiz_id'])\
+            .execute()\
+            .data
+        
+        # Build report
+        report = []
+        for q in questions:
+            q_id = str(q['id'])
+            user_answer = answers.get(q_id, 'Not Answered')
+            
+            # Determine correctness
+            is_correct = False
+            correct_answer = ''
+            
+            if q['question_type'] == 'MCQ':
+                option_map = {
+                    'A': q.get('option_a'),
+                    'B': q.get('option_b'),
+                    'C': q.get('option_c'),
+                    'D': q.get('option_d')
+                }
+                correct_code = q.get('correct_option', '').upper()
+                correct_answer = option_map.get(correct_code, 'Unknown')
+                is_correct = (user_answer.upper() == correct_code)
+                
+            elif q['question_type'] == 'FILL_BLANK':
+                correct_answer = q.get('correct_option', '')
+                is_correct = (str(user_answer).strip().lower() == str(correct_answer).strip().lower())
+                
+            elif q['question_type'] == 'THEORY':
+                keywords = [k.strip().lower() for k in q.get('keywords', '').split(',') if k.strip()]
+                user_text = str(user_answer).lower()
+                correct_answer = f"Keywords: {q.get('keywords', 'None')}"
+                is_correct = any(keyword in user_text for keyword in keywords) if keywords else False
+            
+            report.append({
+                'question': q.get('question_text', 'Question not found'),
+                'user_answer': user_answer,
+                'correct_answer': correct_answer,
+                'is_correct': is_correct
+            })
+        
+        return render_template('quiz_result.html', result=result, report=report)
+        
+    except Exception as e:
+        flash(f"Error loading results: {str(e)}", "error")
+        return redirect(url_for('student_dashboard'))
 
 if __name__ == '__main__':
     app.run(debug=True)

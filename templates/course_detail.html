@@ -205,10 +205,13 @@
                         <i class="ph-bold ph-gear"></i>
                     </button>
 
-                    <a href="/instructor/delete_quiz/{{ quiz.id }}" onclick="return confirm('Are you sure? This will delete the quiz and all its questions.')" 
-                       class="w-10 h-10 flex items-center justify-center border border-slate-200 rounded-lg text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition" title="Delete">
-                        <i class="ph-bold ph-trash"></i>
-                    </a>
+                    <!-- Just update the onclick confirmation message -->
+<a href="/instructor/delete_quiz/{{ quiz.id }}" 
+   onclick="return confirm('WARNING: Deleting this quiz will also delete ALL student results and questions.\\n\\nThis cannot be undone. Are you sure?')" 
+   class="w-10 h-10 flex items-center justify-center border border-slate-200 rounded-lg text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition" 
+   title="Delete">
+    <i class="ph-bold ph-trash"></i>
+</a>
                 </div>
             </div>
             {% endfor %}

@@ -1,52 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Select Course | Gradebook</title>
+    <title>Select Course | Gradebook</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans">
+<body class="bg-slate-50 min-h-screen flex">
 
-    <div class="md:hidden bg-white border-b border-slate-200 p-4 flex justify-between items-center sticky top-0 z-30">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white">
-                <i class="ph-bold ph-chalkboard-teacher text-lg"></i>
-            </div>
+    <aside class="w-64 bg-white border-r border-slate-200 min-h-screen p-6 fixed">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white"><i class="ph-bold ph-chalkboard-teacher"></i></div>
             <span class="font-bold text-lg text-slate-800">SkillTrack</span>
         </div>
-        <button onclick="toggleSidebar()" class="text-slate-600 focus:outline-none">
-            <i class="ph-bold ph-list text-2xl"></i>
-        </button>
-    </div>
-
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col justify-between">
-        <div>
-            <div class="flex items-center gap-3 p-6 mb-4">
-                <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white">
-                    <i class="ph-bold ph-chalkboard-teacher"></i>
-                </div>
-                <span class="font-bold text-lg text-slate-800">SkillTrack</span>
-            </div>
-
-            <div class="md:hidden absolute top-4 right-4">
-                <button onclick="toggleSidebar()" class="text-slate-500">
-                    <i class="ph-bold ph-x text-2xl"></i>
-                </button>
-            </div>
-
-            <nav class="px-2">
-                <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-purple-700 font-bold block mb-2 rounded-xl transition hover:bg-slate-50">
-                    <i class="ph-bold ph-arrow-left"></i> Back to Dashboard
-                </a>
-            </nav>
-        </div>
+        <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-purple-700 font-bold block mb-2"><i class="ph-bold ph-arrow-left"></i> Back to Dashboard</a>
     </aside>
 
-    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden glass"></div>
-
-    <main class="w-full md:ml-64 p-4 md:p-8 transition-all duration-300">
-        <h1 class="text-2xl font-bold text-slate-800 mb-2 mt-4 md:mt-0">Gradebook & Rankings</h1>
+    <main class="ml-64 flex-1 p-8">
+        <h1 class="text-2xl font-bold text-slate-800 mb-2">Gradebook & Rankings</h1>
         <p class="text-slate-500 mb-8">Select a course to view student rankings and export grades.</p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -59,26 +29,11 @@
                 <p class="text-xs text-slate-400 font-bold uppercase">{{ course.category }}</p>
             </a>
             {% else %}
-            <div class="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12 border border-dashed border-slate-300 rounded-xl">
+            <div class="col-span-3 text-center py-12 border border-dashed border-slate-300 rounded-xl">
                 <p class="text-slate-500">You haven't created any courses yet.</p>
             </div>
             {% endfor %}
         </div>
     </main>
-
-    <script>
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('hidden');
-            }
-        }
-    </script>
 </body>
 </html>

@@ -2,185 +2,250 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>{{ quiz.title }} | Attempt</title>
+    <title>{{ quiz.title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
-    <style>
-        /* Disable Text Selection and Copying */
+    <style> 
         body { 
             user-select: none; 
-            -webkit-user-select: none; 
-            -moz-user-select: none; 
+            -webkit-user-select: none;
+            -moz-user-select: none;
             -ms-user-select: none;
         }
-        /* Hide scrollbar for header */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
+        /* Prevent copy/paste */
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        input, textarea {
+            user-select: text !important;
         }
     </style>
+</head>
+<body class="bg-slate-50 font-sans pb-24" oncontextmenu="return false;">
+
+    <!-- Top Bar -->
+    <div class="fixed top-0 w-full bg-white border-b border-slate-200 z-50 px-4 py-3 flex justify-between items-center shadow-sm">
+        <div>
+            <h1 class="font-bold text-slate-800 text-sm md:text-base">{{ quiz.title }}</h1>
+            <p class="text-xs text-slate-500">Exam Mode</p>
+        </div>
+        <div class="bg-indigo-600 text-white px-4 py-1.5 rounded-lg font-mono font-bold text-lg shadow-lg shadow-indigo-200">
+            <span id="timer">00:00</span>
+        </div>
+    </div>
+
+    <!-- Questions Container -->
+    <div class="max-w-3xl mx-auto mt-20 px-4">
+        <form id="quizForm" action="/student/submit_quiz/{{ quiz.id }}" method="POST">
+            <input type="hidden" name="final_answers" id="finalAnswersInput">
+            <input type="hidden" name="violation_count" id="violationCountInput" value="0">
+
+            {% for q in questions %}
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6" id="question-{{ q.id }}">
+                <span class="inline-block bg-slate-100 text-slate-500 text-xs font-bold px-2 py-1 rounded mb-3">
+                    Question {{ loop.index }}
+                </span>
+                
+                <h3 class="text-lg font-bold text-slate-800 mb-4">{{ q.text }}</h3>
+
+                {% if q.question_type == 'MCQ' %}
+                <div class="space-y-3">
+                    {% for opt in q.options %}
+                    <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-indigo-50 transition question-option">
+                        <input type="radio" 
+                               name="question_{{ q.id }}" 
+                               value="{{ opt.code }}" 
+                               onchange="saveAnswer('{{ q.id }}', '{{ opt.code }}')" 
+                               class="w-5 h-5 text-indigo-600 question-radio">
+                        <span class="text-slate-700">{{ opt.text }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if q.question_type == 'FILL_BLANK' %}
+                <input type="text" 
+                       name="question_{{ q.id }}"
+                       oninput="saveAnswer('{{ q.id }}', this.value)" 
+                       placeholder="Type your answer here..." 
+                       class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">
+                {% endif %}
+
+                {% if q.question_type == 'THEORY' %}
+                <textarea name="question_{{ q.id }}"
+                          oninput="saveAnswer('{{ q.id }}', this.value)"
+                          placeholder="Type your answer here..."
+                          rows="4"
+                          class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"></textarea>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </form>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="fixed bottom-0 w-full bg-white border-t border-slate-200 p-4 z-50">
+        <button type="button" onclick="submitExam()" 
+                class="w-full md:max-w-md mx-auto block bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-indigo-700 transition">
+            Submit Exam
+        </button>
+    </div>
+
+    <!-- Warning Modal -->
+    <div id="warningModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 max-w-sm mx-4">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 text-2xl mx-auto mb-4">
+                    <i class="ph-bold ph-warning"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800 mb-2" id="warningTitle">Warning</h3>
+                <p class="text-slate-600 mb-4" id="warningMessage"></p>
+                <button onclick="closeWarning()" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        let duration = {{ quiz.duration_minutes }} * 60; // Convert to seconds
-        let violations = 0;
+        // ========== QUIZ STATE ==========
+        let answers = {};
+        let isSubmitting = false;
+        let violationCount = 0;
         const MAX_VIOLATIONS = 3;
-
-        // --- 1. COUNTDOWN TIMER ---\
-        function startTimer() {
-            const timerElement = document.getElementById('timer');
-            const mobileTimer = document.getElementById('mobile_timer');
-            
-            const interval = setInterval(function () {
-                let minutes = parseInt(duration / 60, 10);
-                let seconds = parseInt(duration % 60, 10);
-
-                minutes = minutes < 10 ? "0" + minutes : minutes;
-                seconds = seconds < 10 ? "0" + seconds : seconds;
-
-                const timeString = minutes + ":" + seconds;
-                if(timerElement) timerElement.textContent = timeString;
-                if(mobileTimer) mobileTimer.textContent = timeString;
+        let timeLeft = {{ quiz.duration_minutes }} * 60;
+        
+        // ========== TAB SWITCH DETECTION ==========
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && !isSubmitting) {
+                violationCount++;
+                document.getElementById('violationCountInput').value = violationCount;
                 
-                // Visual Warning: Red color when less than 5 mins
-                if (duration < 300) {
-                    if(timerElement) timerElement.classList.add('text-red-600', 'animate-pulse');
-                    if(mobileTimer) mobileTimer.classList.add('text-red-600', 'animate-pulse');
-                }
-
-                if (--duration < 0) {
-                    clearInterval(interval);
-                    submitQuiz();
-                }
-            }, 1000);
-        }
-
-        // --- 2. ANTI-CHEAT: TAB SWITCH DETECTION ---
-        document.addEventListener("visibilitychange", function() {
-            if (document.hidden) {
-                violations++;
-                document.getElementById('violation_count').value = violations; // Update hidden input
-                
-                if (violations >= MAX_VIOLATIONS) {
-                    alert("Maximum violations reached. Submitting quiz automatically.");
-                    submitQuiz();
+                if (violationCount >= MAX_VIOLATIONS) {
+                    showWarning("Quiz Terminated", 
+                               "You switched tabs too many times. Quiz will be submitted automatically.");
+                    setTimeout(() => {
+                        submitExam();
+                    }, 2000);
                 } else {
-                    showViolationModal(violations);
+                    showWarning(`Warning ${violationCount}/${MAX_VIOLATIONS}`, 
+                               "Please do not switch tabs or windows during the exam.");
                 }
             }
         });
 
-        function showViolationModal(count) {
-            const modal = document.getElementById('violationModal');
-            const msg = document.getElementById('violationMsg');
-            msg.innerText = `You have switched tabs ${count} times. At 3, your quiz will end.`;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+        // ========== ANTI-CHEATING MEASURES ==========
+        // Disable right-click
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // Disable keyboard shortcuts for copy/paste
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+C, Ctrl+V, Ctrl+X
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'v' || e.key === 'x')) {
+                e.preventDefault();
+                showWarning("Action Restricted", "Copy/paste is disabled during the exam.");
+            }
+            // F5 refresh
+            if (e.key === 'F5') {
+                e.preventDefault();
+                showWarning("Refresh Blocked", "You cannot refresh the page during the exam.");
+            }
+        });
+
+        // ========== TIMER ==========
+        function updateTimer() {
+            if (timeLeft <= 0) {
+                showWarning("Time's Up!", "Your quiz will be submitted automatically.");
+                setTimeout(() => submitExam(), 1500);
+                return;
+            }
+            
+            let minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+            document.getElementById('timer').textContent = 
+                `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            timeLeft--;
+        }
+        
+        // Update timer every second
+        setInterval(updateTimer, 1000);
+        updateTimer(); // Initial call
+
+        // ========== ANSWER MANAGEMENT ==========
+        function saveAnswer(questionId, answer) {
+            answers[questionId] = answer;
+            
+            // Visual feedback for MCQ selection
+            const questionDiv = document.getElementById(`question-${questionId}`);
+            if (questionDiv) {
+                // Remove selected class from all options
+                const allOptions = questionDiv.querySelectorAll('.question-option');
+                allOptions.forEach(opt => {
+                    opt.classList.remove('bg-indigo-50', 'border-indigo-300');
+                });
+                
+                // Add selected class to chosen option
+                const selectedRadio = questionDiv.querySelector(`input[value="${answer}"]`);
+                if (selectedRadio && selectedRadio.parentElement) {
+                    selectedRadio.parentElement.classList.add('bg-indigo-50', 'border-indigo-300');
+                }
+            }
         }
 
-        function closeViolationModal() {
-            const modal = document.getElementById('violationModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        // --- 3. SUBMIT FUNCTION ---
-        function submitQuiz() {
+        // ========== SUBMIT FUNCTION ==========
+        function submitExam() {
+            if (isSubmitting) return; // Prevent double submission
+            
+            isSubmitting = true;
+            
+            // Validate at least some answers are filled
+            const answeredCount = Object.keys(answers).length;
+            const totalQuestions = {{ questions|length }};
+            
+            if (answeredCount === 0) {
+                if (!confirm("You haven't answered any questions. Submit anyway?")) {
+                    isSubmitting = false;
+                    return;
+                }
+            } else if (answeredCount < totalQuestions) {
+                if (!confirm(`You've answered ${answeredCount} out of ${totalQuestions} questions. Submit anyway?`)) {
+                    isSubmitting = false;
+                    return;
+                }
+            }
+            
+            // Prepare final submission
+            document.getElementById('finalAnswersInput').value = JSON.stringify(answers);
             document.getElementById('quizForm').submit();
         }
 
-        // Prevent Right Click
-        document.addEventListener('contextmenu', event => event.preventDefault());
+        // ========== WARNING MODAL ==========
+        function showWarning(title, message) {
+            document.getElementById('warningTitle').textContent = title;
+            document.getElementById('warningMessage').textContent = message;
+            document.getElementById('warningModal').classList.remove('hidden');
+        }
 
-        window.onload = startTimer;
+        function closeWarning() {
+            document.getElementById('warningModal').classList.add('hidden');
+        }
+
+        // ========== AUTO-SAVE PROGRESS ==========
+        setInterval(() => {
+            if (Object.keys(answers).length > 0 && !isSubmitting) {
+                // You can implement auto-save to backend here
+                console.log('Auto-saving progress...', answers);
+            }
+        }, 30000); // Every 30 seconds
     </script>
-</head>
-<body class="bg-slate-50 min-h-screen pb-24 font-sans">
-
-    <div class="fixed top-0 inset-x-0 bg-white border-b border-slate-200 z-40 shadow-sm px-4 py-3 flex justify-between items-center">
-        <div class="flex items-center gap-3 overflow-hidden">
-            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shrink-0">
-                <i class="ph-bold ph-timer text-lg"></i>
-            </div>
-            <div class="min-w-0">
-                <h1 class="font-bold text-slate-800 text-sm truncate max-w-[150px] md:max-w-none">{{ quiz.title }}</h1>
-                <p class="text-xs text-slate-500">Remaining Time</p>
-            </div>
-        </div>
-        
-        <div class="font-mono text-xl md:text-2xl font-bold text-slate-800" id="mobile_timer">
-            {{ quiz.duration_minutes }}:00
-        </div>
-    </div>
-
-    <div class="max-w-3xl mx-auto p-4 md:p-8 mt-16 md:mt-20">
-        
-        <form id="quizForm" action="/student/submit_quiz/{{ quiz.id }}" method="POST" class="space-y-6">
-            <input type="hidden" name="violation_count" id="violation_count" value="0">
-
-            {% for q in questions %}
-            <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
-                
-                <div class="flex justify-between items-start mb-4">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Question {{ loop.index }}</span>
-                    <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-1 rounded uppercase">{{ q.question_type }}</span>
-                </div>
-
-                <h3 class="text-lg md:text-xl font-bold text-slate-800 mb-6 leading-relaxed">{{ q.question_text }}</h3>
-
-                <div class="space-y-3">
-                    {% if q.question_type == 'MCQ' %}
-                        <div class="grid grid-cols-1 gap-3">
-                            {% for opt in q.options %}
-                            <label class="relative flex items-center p-4 border border-slate-200 rounded-xl cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition group active:scale-[0.99]">
-                                <input type="radio" name="question_{{ q.id }}" value="{{ opt.option_label }}" class="peer h-5 w-5 text-indigo-600 border-gray-300 focus:ring-indigo-500">
-                                <span class="ml-3 text-slate-700 font-medium peer-checked:text-indigo-700 select-none">{{ opt.content }}</span>
-                                <div class="absolute inset-0 rounded-xl border-2 border-transparent peer-checked:border-indigo-600 pointer-events-none"></div>
-                            </label>
-                            {% endfor %}
-                        </div>
-                    
-                    {% elif q.question_type == 'FILL_BLANK' %}
-                        <input type="text" name="question_{{ q.id }}" placeholder="Type your answer here..." 
-                               class="w-full p-4 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800 text-lg shadow-sm" autocomplete="off">
-                    
-                    {% elif q.question_type == 'THEORY' %}
-                        <textarea name="question_{{ q.id }}" rows="5" placeholder="Explain your answer..." 
-                                  class="w-full p-4 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800 text-base shadow-sm leading-relaxed"></textarea>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-
-            <div class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 p-4 z-30 md:relative md:bg-transparent md:border-0 md:p-0">
-                <div class="max-w-3xl mx-auto flex flex-col md:flex-row items-center gap-4">
-                     <p class="hidden md:block text-slate-400 text-sm">Double check your answers before submitting.</p>
-                    <button type="button" onclick="submitQuiz()" class="w-full md:w-auto md:ml-auto px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 text-lg flex items-center justify-center gap-2">
-                        Submit Quiz <i class="ph-bold ph-paper-plane-right"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="h-20 md:hidden"></div>
-
-        </form>
-    </div>
-
-    <div id="violationModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden items-center justify-center z-50 p-6">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center transform transition-all scale-100">
-            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                <i class="ph-fill ph-warning-octagon text-3xl"></i>
-            </div>
-            <h2 class="text-xl font-bold text-slate-800 mb-2">Warning Issued!</h2>
-            <p id="violationMsg" class="text-slate-600 mb-6 leading-relaxed">You left the quiz tab.</p>
-            <button onclick="closeViolationModal()" class="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition shadow-lg shadow-red-200">
-                I Understand
-            </button>
-        </div>
-    </div>
-
 </body>
 </html>
